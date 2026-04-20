@@ -9,6 +9,9 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-karakalpak-ner-rule-based-2024-change-in-production')
+DEBUG = os.environ.get('DEBUG', 'True') == 'True'
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -80,3 +83,4 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10 MB
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
 
 ALLOWED_UPLOAD_EXTENSIONS = ['.txt', '.docx']
+
