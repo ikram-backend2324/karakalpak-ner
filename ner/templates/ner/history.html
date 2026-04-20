@@ -1,0 +1,114 @@
+{% extends 'ner/base.html' %}
+
+{% block title %}Analysis history — Karakalpak NER{% endblock %}
+
+{% block content %}
+
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <div>
+    <h4 class="mb-0 fw-bold">
+      <i class="bi bi-clock-history text-primary me-2"></i>Analysis history
+    </h4>
+    <small class="text-muted">
+      {{ total_done }} completed &nbsp;·&nbsp; {{ total_results }} total entities found
+    </small>
+  </div>
+  <a href="{% url 'index' %}" class="btn btn-primary">
+    <i class="bi bi-upload me-1"></i>New analysis
+  </a>
+</div>
+
+{% if analyses %}
+<div class="card">
+  <div class="table-scroll">
+    <table class="table table-hover table-bordered result-table mb-0">
+      <thead class="table-dark">
+        <tr>
+          <th style="width:60px">#</th>
+          <th>Filename</th>
+          <th style="width:160px">Date</th>
+          <th style="width:80px">Tokens</th>
+          <th style="width:90px">Entities</th>
+          <th style="width:100px">Status</th>
+          <th style="width:120px">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in analyses %}
+        <tr>
+          <td class="text-center text-muted small">{{ a.pk }}</td>
+          <td>
+            <div class="fw-semibold">{{ a.original_name }}</div>
+            <small class="text-muted font-monospace">{{ a.filename|truncatechars:40 }}</small>
+          </td>
+          <td class="small text-muted">{{ a.upload_time|date:"d M Y H:i" }}</td>
+          <td class="text-center">{{ a.token_count }}</td>
+          <td class="text-center">
+            {% if a.result_count %}
+              <span class="badge bg-success">{{ a.result_count }}</span>
+            {% else %}
+              <span class="text-muted">—</span>
+            {% endif %}
+          </td>
+          <td class="text-center">
+            <span class="badge bg-{{ a.status_badge }}">{{ a.status }}</span>
+            {% if a.error_message %}
+            <i class="bi bi-exclamation-circle text-danger ms-1"
+               title="{{ a.error_message }}"
+               data-bs-toggle="tooltip"></i>
+            {% endif %}
+          </td>
+          <td>
+            <div class="d-flex gap-1">
+              {% if a.status == 'done' %}
+              <a href="{% url 'result' a.pk %}"
+                 class="btn btn-sm btn-outline-primary" title="View results">
+                <i class="bi bi-eye"></i>
+              </a>
+              <a href="{% url 'download_json' a.pk %}"
+                 class="btn btn-sm btn-outline-success" title="Download JSON">
+                <i class="bi bi-filetype-json"></i>
+              </a>
+              <a href="{% url 'download_excel' a.pk %}"
+                 class="btn btn-sm btn-outline-warning" title="Download Excel">
+                <i class="bi bi-file-earmark-excel"></i>
+              </a>
+              {% endif %}
+              <form method="post" action="{% url 'delete_analysis' a.pk %}"
+                    onsubmit="return confirm('Delete this analysis?')">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline-danger"
+                        title="Delete">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% else %}
+<div class="card">
+  <div class="card-body text-center py-5 text-muted">
+    <i class="bi bi-inbox display-4 d-block mb-3 opacity-25"></i>
+    <p>No analyses yet.</p>
+    <a href="{% url 'index' %}" class="btn btn-primary">
+      <i class="bi bi-upload me-1"></i>Upload your first file
+    </a>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Bootstrap tooltips
+document.querySelectorAll('[data-bs-toggle="tooltip"]')
+  .forEach(el => new bootstrap.Tooltip(el));
+</script>
+{% endblock %}
