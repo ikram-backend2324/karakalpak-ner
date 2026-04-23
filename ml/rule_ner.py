@@ -562,25 +562,37 @@ def _build_patterns() -> dict:
         r"(?:(?:\d[\d\s,.]*)|(?:(?:" + _NUM_PAT + r")(?:\s+(?:" + _NUM_PAT + r"))*))"
         r"\s+(?:" + _UNIT_PAT + r")"
     )
+    # CNT_BARE — number word(s) NOT followed by a known unit.
+    # Captures: "tort mashin", "u'sh alma", "jigirma bala", "on eki qa'lem"
+    # The following word (any noun) is included in the span so normalizer
+    # can store it as the informal unit. Confidence will be low (0.45 base).
+    cnt_bare = (
+        r"(?:(?:\d+)|(?:(?:" + _NUM_PAT + r")(?:\s+(?:" + _NUM_PAT + r"))*)"
+        r")"
+        r"\s+(?!(?:" + _UNIT_PAT + r"|" + _CURR_PAT + r"|" + _PCT_PAT + r"|"
+        r"min'g|ju'z|million|milyard|procent|saat|jili|jilda)\b)"   # exclude already-handled contexts
+        r"([a-zA-Z\u00C0-\u024F\u0400-\u04FF']{2,})"               # any noun ≥ 2 chars
+    )
     frc = (
         r"(?:\d+[.,]\d+"
         r"|(?:(?:" + _NUM_PAT + r")\s+)*bu'tin(?:\s+(?:" + _NUM_PAT + r"))+"
         r"|(?:nu'kte|u'tir)\s+(?:" + _NUM_PAT + r")(?:\s+(?:" + _NUM_PAT + r"))*)"
     )
     return {
-        "MON": re.compile(mon, _F),
-        "PCT": re.compile(pct, _F),
-        "DAT": re.compile(dat, _F),
-        "TIM": re.compile(tim, _F),
-        "ORD": re.compile(r"\b(?:" + _ORD_PAT    + r")\b", _F),
-        "CNT": re.compile(cnt, _F),
-        "FRC": re.compile(frc, _F),
-        "APX": re.compile(r"\b(?:" + _APPROX_PAT + r")\b", _F),
+        "MON":      re.compile(mon,      _F),
+        "PCT":      re.compile(pct,      _F),
+        "DAT":      re.compile(dat,      _F),
+        "TIM":      re.compile(tim,      _F),
+        "ORD":      re.compile(r"\b(?:" + _ORD_PAT    + r")\b", _F),
+        "CNT":      re.compile(cnt,      _F),
+        "CNT_BARE": re.compile(cnt_bare, _F),   # bare number + any noun
+        "FRC":      re.compile(frc,      _F),
+        "APX":      re.compile(r"\b(?:" + _APPROX_PAT + r")\b", _F),
     }
 
 
 PATTERNS = _build_patterns()
-_PRIORITY = ["MON", "DAT", "TIM", "PCT", "CNT", "FRC", "ORD", "APX"]
+_PRIORITY = ["MON", "DAT", "TIM", "PCT", "CNT", "FRC", "ORD", "APX", "CNT_BARE"]
 
 
 # =============================================================================
@@ -596,24 +608,36 @@ _SIGNAL_WEIGHTS = {
     "has_unit_word":         0.30,
     "has_butin_keyword":     0.30,
     "has_approx_phrase":     0.30,
-    "has_weekday_prefix":    0.25,   # weekday before date → strong DAT signal
+    "has_weekday_prefix":    0.25,
     "has_digit":             0.20,
     "has_month_name":        0.20,
     "has_num_word":          0.15,
     "has_multiplier":        0.15,
     "span_multi_word":       0.10,
     "value_in_range":        0.10,
-    "misspelled_but_matched":0.00,   # neutral — just informational signal
+    "misspelled_but_matched":0.00,
+    # CNT_BARE specific signals
+    "num_chain":             0.25,   # 2+ consecutive number words → strong count signal
+    "has_informal_unit":     0.10,   # followed by any noun (low but positive)
+    "large_number":          0.15,   # number ≥ 10 → less likely to be an article
     # penalties
-    "bir_likely_article":   -0.25,
+    "bir_likely_article":   -0.30,   # "bir" with no numeric context
     "on_likely_prep":       -0.20,
     "value_out_of_range":   -0.40,
     "single_ambiguous":     -0.10,
+    "bare_single_digit":    -0.15,   # bare "eki", "u'sh" alone — ambiguous
 }
 
 _BASE_CONF = {
-    "MON": 0.30, "PCT": 0.30, "DAT": 0.30, "TIM": 0.30,
-    "CNT": 0.25, "FRC": 0.25, "ORD": 0.35, "APX": 0.40,
+    "MON":      0.30,
+    "PCT":      0.30,
+    "DAT":      0.30,
+    "TIM":      0.30,
+    "CNT":      0.25,
+    "CNT_BARE": 0.45,   # lower base — needs signals to push above threshold
+    "FRC":      0.25,
+    "ORD":      0.35,
+    "APX":      0.40,
 }
 
 
@@ -624,50 +648,110 @@ def _score_match(etype: str, raw: str, ctx_before: str, ctx_after: str,
     signals = []
     score   = _BASE_CONF.get(etype, 0.25)
 
-    # Universal signals
+    # ── Universal signals ─────────────────────────────────
     if re.search(r"\d", raw):                        signals.append("has_digit")
     if any(t in UNITS_ALL for t in tokens):          signals.append("has_num_word")
     if any(t in MULTIPLIERS for t in tokens):        signals.append("has_multiplier")
     if len(tokens) >= 2:                             signals.append("span_multi_word")
     else:                                            signals.append("single_ambiguous")
+    if original_raw and original_raw.lower() != raw_l:
+        signals.append("misspelled_but_matched")
 
-    # Type-specific signals
+    # ── Type-specific signals ─────────────────────────────
     if etype == "MON":
         if any(c.lower() in raw_l for c in CURRENCY_WORDS):
             signals.append("has_currency_word")
+
     elif etype == "PCT":
         if any(p in raw_l for p in PERCENT_WORDS):
             signals.append("has_percent_word")
+
     elif etype == "DAT":
         if any(y in raw_l for y in YEAR_MARKERS):   signals.append("has_year_marker")
         if any(m in raw_l for m in MONTH_MAP):       signals.append("has_month_name")
         if any(w in raw_l for w in WEEKDAYS):        signals.append("has_weekday_prefix")
+
     elif etype == "TIM":
         if raw_l.startswith("saat"):                 signals.append("has_saat_prefix")
         if any(t in raw_l for t in TIME_CONTEXT):    signals.append("has_approx_phrase")
+
     elif etype == "CNT":
         if any(u in tokens for u in UNIT_WORDS):     signals.append("has_unit_word")
+
+    elif etype == "CNT_BARE":
+        # ── Strategy 1: num_chain — two or more number words together ────────
+        num_tokens = [t for t in tokens[:-1] if t in UNITS_ALL or t in MULTIPLIERS
+                      or re.fullmatch(r"\d+", t)]
+        if len(num_tokens) >= 2:
+            signals.append("num_chain")
+
+        # ── Strategy 2: large_number — values ≥ 10 less likely to be article ─
+        try:
+            val = words_to_number(tokens[:-1])   # exclude the trailing noun
+            if val >= 10:
+                signals.append("large_number")
+            elif val <= 1:
+                signals.append("bare_single_digit")
+        except Exception:
+            pass
+
+        # ── Strategy 3: informal unit — any noun after the number ────────────
+        if len(tokens) >= 2 and tokens[-1] not in UNITS_ALL:
+            signals.append("has_informal_unit")
+
+        # ── Strategy 4: bir article penalty ──────────────────────────────────
+        # Applied below in the shared ambiguity section
+
     elif etype == "FRC":
         if "bu'tin" in raw_l:                        signals.append("has_butin_keyword")
+
     elif etype == "ORD":
         if any(o in raw_l for o in ORDINAL_MAP):     signals.append("has_ordinal_suffix")
+
     elif etype == "APX":
         if any(a in raw_l for a in APPROX_MAP):      signals.append("has_approx_phrase")
 
-    # Misspelling signal (informational only, no penalty)
-    if original_raw and original_raw.lower() != raw_l:
-        signals.append("misspelled_but_matched")
-
-    # Ambiguity penalties
+    # ── Shared ambiguity penalties ────────────────────────────────────────────
     ctx_tokens = (ctx_before + " " + ctx_after).lower().split()
-    if tokens == ["bir"] or (etype in ("CNT", "APX") and tokens[:1] == ["bir"]):
+
+    # BIR article check — applies to CNT and CNT_BARE
+    # "bir kisi keldi" — bir = "a person came" (article, not count)
+    # "bir dana" — bir = "one piece" (genuine count with known unit)
+    if tokens[0] == "bir" and etype in ("CNT", "CNT_BARE"):
         next_tok = ctx_after.strip().split()[:1]
-        next_tok = next_tok[0] if next_tok else ""
-        if next_tok in _BIR_NONNUMERIC or not any(t in _BIR_NUMERIC for t in ctx_tokens):
+        next_tok = next_tok[0].lower() if next_tok else ""
+        has_numeric_ctx = any(t in _BIR_NUMERIC for t in ctx_tokens)
+
+        if next_tok in _BIR_NONNUMERIC:
+            # Explicitly non-numeric context
             signals.append("bir_likely_article")
-    if tokens == ["on"] and etype == "CNT":
+        elif etype == "CNT_BARE" and not has_numeric_ctx:
+            # Bare noun after bir with no surrounding numeric context
+            signals.append("bir_likely_article")
+        elif etype == "CNT":
+            # Even with a known unit, bir = article in certain patterns
+            # Heuristic: if the verb after is existence/movement (bar, keldi, bар, jur)
+            # treat as article
+            existence_verbs = {"bar", "keldi", "jur", "tur", "otir", "bар", "joq"}
+            ctx_after_tokens = ctx_after.strip().lower().split()
+            if any(v in ctx_after_tokens[:3] for v in existence_verbs):
+                signals.append("bir_likely_article")
+
+    # ON preposition check
+    if tokens == ["on"] and etype in ("CNT", "CNT_BARE"):
         signals.append("on_likely_prep")
 
+    # bare_single_digit only for genuinely ambiguous single small numbers
+    # NOT for bir (handled above) — for eki, u'sh etc. alone they are ambiguous
+    if etype == "CNT_BARE" and "bare_single_digit" in signals:
+        # Remove the penalty if there's a num_chain — chain overrides
+        if "num_chain" in signals:
+            signals.remove("bare_single_digit")
+        # Also remove if it's bir — bir has its own dedicated penalty logic above
+        if tokens[0] == "bir":
+            signals.remove("bare_single_digit")
+
+    # Apply all weights
     for sig in signals:
         score += _SIGNAL_WEIGHTS.get(sig, 0.0)
 
@@ -876,10 +960,33 @@ def _norm_APX(raw: str) -> dict:
     return {"value": "~?", "unit": "approx", "formatted": raw}
 
 
+def _norm_CNT_BARE(raw: str) -> dict:
+    """
+    Bare count — number word(s) + unknown noun.
+    e.g. "tort mashin" → value=4, unit="mashin" (informal)
+    """
+    tokens = raw.split()
+    # Last token is the informal unit noun
+    unit     = tokens[-1] if len(tokens) >= 2 else ""
+    num_toks = tokens[:-1] if len(tokens) >= 2 else tokens
+    value    = words_to_number(num_toks)
+    return {
+        "value":     value,
+        "unit":      unit,
+        "formatted": f"{value:,.0f} {unit}".strip(),
+    }
+
+
 _NORMALIZERS = {
-    "MON": _norm_MON, "PCT": _norm_PCT, "DAT": _norm_DAT,
-    "TIM": _norm_TIM, "CNT": _norm_CNT, "FRC": _norm_FRC,
-    "ORD": _norm_ORD, "APX": _norm_APX,
+    "MON":      _norm_MON,
+    "PCT":      _norm_PCT,
+    "DAT":      _norm_DAT,
+    "TIM":      _norm_TIM,
+    "CNT":      _norm_CNT,
+    "CNT_BARE": _norm_CNT_BARE,
+    "FRC":      _norm_FRC,
+    "ORD":      _norm_ORD,
+    "APX":      _norm_APX,
 }
 
 
@@ -930,7 +1037,13 @@ def _get_sent_idx(start: int, offsets: list) -> int:
 # =============================================================================
 
 def _post_process(results: list) -> list:
-    """Remove exact duplicates, filter weak single-word APX, re-index."""
+    """
+    - Remove exact duplicates
+    - Filter weak CNT_BARE (confidence < 0.50) — not enough evidence
+    - Filter weak single-word APX
+    - Map CNT_BARE → CNT in final output (internal type only)
+    - Re-index
+    """
     seen, final = set(), []
     for r in sorted(results, key=lambda x: (x.sent_idx, x.start)):
         key = (r.type, r.raw.lower(), r.sent_idx)
@@ -938,10 +1051,25 @@ def _post_process(results: list) -> list:
             r.debug_trace.append("removed_duplicate")
             continue
         seen.add(key)
+
+        # Filter low-confidence bare counts
+        if r.type == "CNT_BARE" and r.confidence < 0.44:
+            r.debug_trace.append(f"filtered_weak_bare_cnt:{r.confidence:.2f}")
+            continue
+
+        # Filter weak single-word APX
         if r.type == "APX" and r.confidence < 0.35 and len(r.raw.split()) == 1:
             r.debug_trace.append(f"filtered_weak_apx:{r.confidence:.2f}")
             continue
+
+        # CNT_BARE surfaces as CNT in the final output
+        # Keep original type in debug_trace for transparency
+        if r.type == "CNT_BARE":
+            r.debug_trace.append("type_was:CNT_BARE")
+            r.type = "CNT"
+
         final.append(r)
+
     for i, r in enumerate(final, 1):
         r.id = i
     return final
