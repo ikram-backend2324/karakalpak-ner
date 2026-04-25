@@ -38,7 +38,7 @@
       <i class="bi bi-file-earmark-excel"></i> Excel
     </a>
     <a href="{% url 'index' %}" class="btn btn-primary btn-sm">
-      <i class="bi bi-plus-lg"></i> New analysis
+      <i class="bi bi-plus-lg"></i> <span data-i18n="btn_new">New analysis</span>
     </a>
   </div>
 </div>
@@ -47,7 +47,7 @@
 <div class="grid-4 fade-up fade-up-1" style="margin-bottom:1.5rem;">
   <div class="stat-card">
     <div class="stat-num">{{ analysis.result_count }}</div>
-    <div class="stat-label">Total entities</div>
+    <div class="stat-label" data-i18n="res_total">Total entities</div>
   </div>
   {% for etype, cnt in type_counts.items %}
   <div class="stat-card" style="border-color:rgba(var(--cnt-rgb),.2);">
@@ -62,7 +62,7 @@
 <!-- Filter pills -->
 <div class="flex flex-wrap fade-up fade-up-2" style="gap:.5rem;margin-bottom:1.25rem;">
   <a href="?type=ALL" class="filter-pill {% if active_type == 'ALL' %}active{% endif %}">
-    All <span style="opacity:.7;">{{ analysis.result_count }}</span>
+    <span data-i18n="btn_all">All</span> <span style="opacity:.7;">{{ analysis.result_count }}</span>
   </a>
   {% for etype, cnt in type_counts.items %}
   <a href="?type={{ etype }}" class="filter-pill {% if active_type == etype %}active{% endif %}">
@@ -77,7 +77,7 @@
   <div class="card-head">
     <div class="card-head-title">
       <i class="bi bi-table" style="color:var(--accent2)"></i>
-      Extracted entities
+      <span data-i18n="res_extracted">Extracted entities</span>
       {% if active_type != 'ALL' %}
         <span class="badge badge-{{ active_type }}">{{ active_type }}</span>
       {% endif %}
@@ -92,11 +92,11 @@
         <tr>
           <th style="width:50px;">#</th>
           <th style="width:70px;">Type</th>
-          <th>Raw expression</th>
-          <th>Normalized value</th>
-          <th style="width:80px;">Unit</th>
-          <th style="width:80px;">Confidence</th>
-          <th style="width:80px;">Sentence</th>
+          <th data-i18n="res_raw">Raw expression</th>
+          <th data-i18n="res_norm">Normalized value</th>
+          <th style="width:80px;" data-i18n="res_unit">Unit</th>
+          <th style="width:80px;" data-i18n="res_conf">Confidence</th>
+          <th style="width:80px;" data-i18n="res_sent">Sentence</th>
         </tr>
       </thead>
       <tbody>
@@ -129,7 +129,7 @@
   {% else %}
   <div style="padding:3rem;text-align:center;color:var(--text3);">
     <i class="bi bi-inbox" style="font-size:2rem;display:block;margin-bottom:.75rem;opacity:.3;"></i>
-    No entities found
+    <span data-i18n="res_empty">No entities found</span>
     {% if active_type != 'ALL' %}for type <span class="badge badge-{{ active_type }}">{{ active_type }}</span>{% endif %}
   </div>
   {% endif %}
