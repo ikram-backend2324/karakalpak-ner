@@ -5,13 +5,13 @@
 
 <div class="flex items-center justify-between fade-up" style="margin-bottom:1.5rem;flex-wrap:wrap;gap:1rem;">
   <div>
-    <h1 class="page-title">Analysis History</h1>
+    <h1 class="page-title" data-i18n="hist_title">Analysis History</h1>
     <p style="color:var(--text2);font-size:.875rem;margin-top:.35rem;">
-      {{ total_done }} completed &nbsp;·&nbsp; {{ total_results }} total entities
+      {{ total_done }} <span data-i18n="hist_completed">completed</span> &nbsp;·&nbsp; {{ total_results }} <span data-i18n="hist_total">total entities</span>
     </p>
   </div>
   <a href="{% url 'index' %}" class="btn btn-primary">
-    <i class="bi bi-plus-lg"></i> New analysis
+    <i class="bi bi-plus-lg"></i> <span data-i18n="btn_new">New analysis</span>
   </a>
 </div>
 
@@ -22,12 +22,12 @@
       <thead>
         <tr>
           <th style="width:60px;">#</th>
-          <th>Filename</th>
-          <th style="width:160px;">Date</th>
-          <th style="width:80px;">Tokens</th>
-          <th style="width:90px;">Entities</th>
-          <th style="width:100px;">Status</th>
-          <th style="width:140px;">Actions</th>
+          <th data-i18n="col_filename">Filename</th>
+          <th style="width:160px;" data-i18n="col_date">Date</th>
+          <th style="width:80px;" data-i18n="col_tokens">Tokens</th>
+          <th style="width:90px;" data-i18n="col_entities">Entities</th>
+          <th style="width:100px;" data-i18n="col_status">Status</th>
+          <th style="width:140px;" data-i18n="col_actions">Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -94,9 +94,9 @@
 {% else %}
 <div class="card fade-up fade-up-1" style="text-align:center;padding:4rem 2rem;">
   <i class="bi bi-inbox" style="font-size:3rem;color:var(--text3);display:block;margin-bottom:1rem;opacity:.3;"></i>
-  <div style="color:var(--text2);margin-bottom:1.25rem;">No analyses yet</div>
+  <div style="color:var(--text2);margin-bottom:1.25rem;" data-i18n="hist_empty">No analyses yet</div>
   <a href="{% url 'index' %}" class="btn btn-primary">
-    <i class="bi bi-upload"></i> Upload your first file
+    <i class="bi bi-upload"></i> <span data-i18n="hist_upload_first">Upload your first file</span>
   </a>
 </div>
 {% endif %}
