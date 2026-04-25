@@ -597,6 +597,49 @@
       border-radius: 2px;
       background: linear-gradient(90deg, var(--accent), var(--accent2));
     }
+
+    /* ═══════════════════════════════════════════
+       LANGUAGE SWITCHER
+    ═══════════════════════════════════════════ */
+    .lang-switcher {
+      display: flex;
+      gap: 2px;
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-radius: var(--radius2);
+      padding: 3px;
+      flex-shrink: 0;
+    }
+
+    .lang-btn {
+      background: transparent;
+      border: none;
+      border-radius: 5px;
+      color: var(--text3);
+      cursor: pointer;
+      font-family: var(--font-mono);
+      font-size: .7rem;
+      font-weight: 600;
+      letter-spacing: .04em;
+      padding: .28rem .5rem;
+      transition: all var(--transition);
+      line-height: 1;
+    }
+
+    .lang-btn:hover {
+      color: var(--text);
+      background: var(--surface);
+    }
+
+    .lang-btn.active {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 0 10px var(--accent-glow);
+    }
+
+    @media (max-width: 640px) {
+      .lang-switcher { display: none; }
+    }
   </style>
 
   {% block extra_css %}{% endblock %}
@@ -610,7 +653,7 @@
       <div class="brand-icon"><i class="bi bi-translate"></i></div>
       <div>
         <div class="brand-text">Karakalpak NER</div>
-        <span class="brand-sub">Son iboralarni ajratish</span>
+        <span class="brand-sub" data-i18n="brand_sub">Son iboralarni ajratish</span>
       </div>
     </a>
 
@@ -621,17 +664,17 @@
     <ul class="nav-links" id="navLinks">
       <li>
         <a href="{% url 'index' %}" {% if request.resolver_match.url_name == 'index' %}class="active"{% endif %}>
-          <i class="bi bi-house"></i> Home
+          <i class="bi bi-house"></i> <span data-i18n="nav_home">Home</span>
         </a>
       </li>
       <li>
         <a href="{% url 'history' %}" {% if request.resolver_match.url_name == 'history' %}class="active"{% endif %}>
-          <i class="bi bi-clock-history"></i> History
+          <i class="bi bi-clock-history"></i> <span data-i18n="nav_history">History</span>
         </a>
       </li>
       <li>
         <a href="/admin/" target="_blank">
-          <i class="bi bi-shield-lock"></i> Admin
+          <i class="bi bi-shield-lock"></i> <span data-i18n="nav_admin">Admin</span>
         </a>
       </li>
     </ul>
@@ -641,6 +684,14 @@
       <i class="bi bi-sun-fill icon-sun"></i>
       <i class="bi bi-moon-fill icon-moon"></i>
     </button>
+
+    <!-- Language switcher -->
+    <div class="lang-switcher" id="langSwitcher">
+      <button class="lang-btn active" data-lang="kaa">QQ</button>
+      <button class="lang-btn" data-lang="uz">UZ</button>
+      <button class="lang-btn" data-lang="ru">RU</button>
+      <button class="lang-btn" data-lang="en">EN</button>
+    </div>
   </div>
 </header>
 
@@ -668,32 +719,297 @@
 </main>
 
 <footer>
-  Karakalpak NER &mdash; Rule-based numerical entity extraction
+  Karakalpak NER &mdash; <span data-i18n="footer_text">Rule-based numerical entity extraction</span>
 </footer>
 
 <script>
-  // ── Mobile nav ──────────────────────────────
-  document.getElementById('navToggle').addEventListener('click', function() {
-    document.getElementById('navLinks').classList.toggle('open');
+// ═══════════════════════════════════════════════════════════
+//  TRANSLATIONS
+// ═══════════════════════════════════════════════════════════
+const TRANSLATIONS = {
+
+  kaa: {
+    brand_sub:        "Son iboralarni ajratish",
+    nav_home:         "Bas bet",
+    nav_history:      "Tariyx",
+    nav_admin:        "Admin",
+    hero_tag:         "Sanlı obyektlerdi anıqlaw",
+    hero_title:       "Qaraqalpaqsha tekstti analizlew",
+    hero_sub:         "Barlıq sanlı ańlatpalardı — pul, sáneler, muǵdar, procentler hám basqalardı ajıratıp alıw hám normallastırıw ushın hújjet júkleń yamasa tekstti kiritiń.",
+    upload_title:     "Hújjet júklew",
+    upload_hint:      ".txt · .docx · max 10 MB",
+    drop_title:       "Fayldı usı jerge taslań",
+    drop_sub:         "yamasa tańlaw ushın basıń",
+    entity_label:     "Ajıratıp alınıwshı obyekt túrleri",
+    btn_all:          "Barlıǵı",
+    btn_none:         "Heshqanday",
+    btn_analyze:      "Hújjetti analizlew",
+    analyzing:        "Hújjetińiz analizlenbekte…",
+    demo_title:       "Qısqasha tekst demosı",
+    btn_sample:       "Úlgini júklew",
+    btn_run:          "Analizlew",
+    demo_placeholder: "Tekst kiritiń",
+    stat_analyses:    "Analizler",
+    stat_entities:    "Obyektler",
+    legend_title:     "Obyekt túrleri",
+    type_MON:         "Pul ańlatpaları",
+    type_PCT:         "Procentli sanlar",
+    type_DAT:         "Sáneler",
+    type_TIM:         "Waqıt ańlatpaları",
+    type_CNT:         "Sanaq sanlar",
+    type_FRC:         "Bólshek sanlar",
+    type_ORD:         "Tártip sanlar",
+    type_APX:         "Shamalı sanlar",
+    res_title:        "Nátiyjeler",
+    res_total:        "Jámi obyektler",
+    res_extracted:    "Ajıratıp alınǵan obyektler",
+    res_raw:          "Dáslepki ańlatpa",
+    res_norm:         "Normallastırılǵan mánisi",
+    res_unit:         "Birlik",
+    res_conf:         "Isenimlilik",
+    res_sent:         "Gáp",
+    res_empty:        "Obyektler tabılmadı",
+    btn_new:          "Jańa analiz",
+    hist_title:       "Analiz tariyxı",
+    hist_completed:   "tamamlandı",
+    hist_total:       "jámi obyektler",
+    col_filename:     "Fayl atı",
+    col_date:         "Sáne",
+    col_tokens:       "Tokenler",
+    col_entities:     "Obyektler",
+    col_status:       "Status",
+    col_actions:      "Háreketler",
+    hist_empty:       "Ele analizler joq",
+    hist_upload_first:"Birinshi faylıńızdı júkleń",
+    footer_text:      "Qaǵıydaǵa tiykarlanǵan sanlı obyektlerdi ajıratıp alıw",
+  },
+
+  uz: {
+    brand_sub:        "Son iboralarni ajratish",
+    nav_home:         "Bosh sahifa",
+    nav_history:      "Tarix",
+    nav_admin:        "Admin",
+    hero_tag:         "Raqamli obyektlarni aniqlash",
+    hero_title:       "Qoraqalpoq matnini tahlil qilish",
+    hero_sub:         "Barcha raqamli iboralarni — pul, sanalar, miqdor, foizlar va boshqalarni ajratib olish va normallash uchun hujjat yuklang yoki matn kiriting.",
+    upload_title:     "Hujjat yuklash",
+    upload_hint:      ".txt · .docx · max 10 MB",
+    drop_title:       "Faylni shu yerga tashlang",
+    drop_sub:         "yoki tanlash uchun bosing",
+    entity_label:     "Ajratiladigan obyekt turlari",
+    btn_all:          "Barchasi",
+    btn_none:         "Hech biri",
+    btn_analyze:      "Hujjatni tahlil qilish",
+    analyzing:        "Hujjatingiz tahlil qilinmoqda…",
+    demo_title:       "Tezkor matn demosi",
+    btn_sample:       "Namuna yuklash",
+    btn_run:          "Tahlil qilish",
+    demo_placeholder: "Matn kiriting",
+    stat_analyses:    "Tahlillar",
+    stat_entities:    "Obyektlar",
+    legend_title:     "Obyekt turlari",
+    type_MON:         "Pul ifodalari",
+    type_PCT:         "Foizli sonlar",
+    type_DAT:         "Sanalar",
+    type_TIM:         "Vaqt ifodalari",
+    type_CNT:         "Sanoq sonlar",
+    type_FRC:         "Kasr sonlar",
+    type_ORD:         "Tartib sonlar",
+    type_APX:         "Taxminiy sonlar",
+    res_title:        "Natijalar",
+    res_total:        "Jami obyektlar",
+    res_extracted:    "Ajratib olingan obyektlar",
+    res_raw:          "Dastlabki ibora",
+    res_norm:         "Normallashtirilgan qiymat",
+    res_unit:         "Birlik",
+    res_conf:         "Ishonchlilik",
+    res_sent:         "Gap",
+    res_empty:        "Obyektlar topilmadi",
+    btn_new:          "Yangi tahlil",
+    hist_title:       "Tahlil tarixi",
+    hist_completed:   "yakunlandi",
+    hist_total:       "jami obyektlar",
+    col_filename:     "Fayl nomi",
+    col_date:         "Sana",
+    col_tokens:       "Tokenlar",
+    col_entities:     "Obyektlar",
+    col_status:       "Holat",
+    col_actions:      "Harakatlar",
+    hist_empty:       "Hali tahlillar yo'q",
+    hist_upload_first:"Birinchi faylingizni yuklang",
+    footer_text:      "Qoidaga asoslangan raqamli obyektlarni ajratib olish",
+  },
+
+  ru: {
+    brand_sub:        "Извлечение числовых выражений",
+    nav_home:         "Главная",
+    nav_history:      "История",
+    nav_admin:        "Админ",
+    hero_tag:         "Распознавание числовых объектов",
+    hero_title:       "Анализ каракалпакского текста",
+    hero_sub:         "Загрузите документ или вставьте текст для извлечения и нормализации числовых выражений — деньги, даты, количества, проценты и другое.",
+    upload_title:     "Загрузить документ",
+    upload_hint:      ".txt · .docx · макс 10 МБ",
+    drop_title:       "Перетащите файл сюда",
+    drop_sub:         "или нажмите для выбора",
+    entity_label:     "Типы извлекаемых объектов",
+    btn_all:          "Все",
+    btn_none:         "Сбросить",
+    btn_analyze:      "Анализировать документ",
+    analyzing:        "Анализируется…",
+    demo_title:       "Быстрый демо-режим",
+    btn_sample:       "Загрузить пример",
+    btn_run:          "Анализировать",
+    demo_placeholder: "Введите текст",
+    stat_analyses:    "Анализов",
+    stat_entities:    "Объектов",
+    legend_title:     "Типы объектов",
+    type_MON:         "Денежные выражения",
+    type_PCT:         "Проценты",
+    type_DAT:         "Даты",
+    type_TIM:         "Время",
+    type_CNT:         "Количества",
+    type_FRC:         "Дроби",
+    type_ORD:         "Порядковые числа",
+    type_APX:         "Приблизительные числа",
+    res_title:        "Результаты",
+    res_total:        "Всего объектов",
+    res_extracted:    "Извлечённые объекты",
+    res_raw:          "Исходное выражение",
+    res_norm:         "Нормализованное значение",
+    res_unit:         "Единица",
+    res_conf:         "Достоверность",
+    res_sent:         "Предложение",
+    res_empty:        "Объекты не найдены",
+    btn_new:          "Новый анализ",
+    hist_title:       "История анализов",
+    hist_completed:   "завершено",
+    hist_total:       "всего объектов",
+    col_filename:     "Имя файла",
+    col_date:         "Дата",
+    col_tokens:       "Токены",
+    col_entities:     "Объекты",
+    col_status:       "Статус",
+    col_actions:      "Действия",
+    hist_empty:       "Анализов ещё нет",
+    hist_upload_first:"Загрузите первый файл",
+    footer_text:      "Извлечение числовых объектов на основе правил",
+  },
+
+  en: {
+    brand_sub:        "Numerical entity extraction",
+    nav_home:         "Home",
+    nav_history:      "History",
+    nav_admin:        "Admin",
+    hero_tag:         "Numerical Entity Recognition",
+    hero_title:       "Analyze Karakalpak Text",
+    hero_sub:         "Upload a document or paste text to extract and normalize all numerical expressions — money, dates, counts, percentages, and more.",
+    upload_title:     "Upload Document",
+    upload_hint:      ".txt · .docx · max 10 MB",
+    drop_title:       "Drop your file here",
+    drop_sub:         "or click to browse",
+    entity_label:     "Entity types to extract",
+    btn_all:          "All",
+    btn_none:         "None",
+    btn_analyze:      "Analyze Document",
+    analyzing:        "Analyzing your document…",
+    demo_title:       "Quick text demo",
+    btn_sample:       "Load sample",
+    btn_run:          "Analyze",
+    demo_placeholder: "Paste text here",
+    stat_analyses:    "Analyses",
+    stat_entities:    "Entities",
+    legend_title:     "Entity types",
+    type_MON:         "Money expressions",
+    type_PCT:         "Percentages",
+    type_DAT:         "Dates",
+    type_TIM:         "Time expressions",
+    type_CNT:         "Counts",
+    type_FRC:         "Fractions",
+    type_ORD:         "Ordinal numbers",
+    type_APX:         "Approximate numbers",
+    res_title:        "Results",
+    res_total:        "Total entities",
+    res_extracted:    "Extracted entities",
+    res_raw:          "Raw expression",
+    res_norm:         "Normalized value",
+    res_unit:         "Unit",
+    res_conf:         "Confidence",
+    res_sent:         "Sentence",
+    res_empty:        "No entities found",
+    btn_new:          "New analysis",
+    hist_title:       "Analysis History",
+    hist_completed:   "completed",
+    hist_total:       "total entities",
+    col_filename:     "Filename",
+    col_date:         "Date",
+    col_tokens:       "Tokens",
+    col_entities:     "Entities",
+    col_status:       "Status",
+    col_actions:      "Actions",
+    hist_empty:       "No analyses yet",
+    hist_upload_first:"Upload your first file",
+    footer_text:      "Rule-based numerical entity extraction",
+  },
+};
+
+// ═══════════════════════════════════════════════════════════
+//  APPLY LANGUAGE
+// ═══════════════════════════════════════════════════════════
+function applyLang(lang) {
+  const t = TRANSLATIONS[lang] || TRANSLATIONS['kaa'];
+
+  // Update all data-i18n elements
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (t[key] !== undefined) el.textContent = t[key];
   });
 
-  // ── Theme toggle ────────────────────────────
-  (function() {
-    const html    = document.documentElement;
-    const btn     = document.getElementById('themeToggle');
-    const STORAGE = 'ner-theme';
+  // Update placeholders
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const key = el.getAttribute('data-i18n-placeholder');
+    if (t[key] !== undefined) el.placeholder = t[key];
+  });
 
-    // Apply saved theme immediately (before paint)
-    const saved = localStorage.getItem(STORAGE) || 'dark';
-    html.setAttribute('data-theme', saved);
+  // Update lang buttons active state
+  document.querySelectorAll('.lang-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.getAttribute('data-lang') === lang);
+  });
 
+  // Store choice
+  localStorage.setItem('ner-lang', lang);
+}
+
+// ── Mobile nav ──────────────────────────────
+document.getElementById('navToggle').addEventListener('click', function() {
+  document.getElementById('navLinks').classList.toggle('open');
+});
+
+// ── Theme toggle ────────────────────────────
+(function() {
+  const html    = document.documentElement;
+  const btn     = document.getElementById('themeToggle');
+  const saved   = localStorage.getItem('ner-theme') || 'dark';
+  html.setAttribute('data-theme', saved);
+
+  btn.addEventListener('click', function() {
+    const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    html.setAttribute('data-theme', next);
+    localStorage.setItem('ner-theme', next);
+  });
+})();
+
+// ── Language switcher ──────────────────────
+(function() {
+  const savedLang = localStorage.getItem('ner-lang') || 'kaa';
+  applyLang(savedLang);
+
+  document.querySelectorAll('.lang-btn').forEach(btn => {
     btn.addEventListener('click', function() {
-      const current = html.getAttribute('data-theme');
-      const next    = current === 'dark' ? 'light' : 'dark';
-      html.setAttribute('data-theme', next);
-      localStorage.setItem(STORAGE, next);
+      applyLang(this.getAttribute('data-lang'));
     });
-  })();
+  });
+})();
 </script>
 
 {% block extra_js %}{% endblock %}
