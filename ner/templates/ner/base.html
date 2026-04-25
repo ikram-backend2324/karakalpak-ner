@@ -13,7 +13,7 @@
 
   <style>
     /* ═══════════════════════════════════════════
-       DESIGN TOKENS
+       DESIGN TOKENS — DARK (default)
     ═══════════════════════════════════════════ */
     :root {
       --bg:          #0a0a0f;
@@ -23,31 +23,84 @@
       --surface2:    #252530;
       --border:      rgba(255,255,255,.07);
       --border2:     rgba(255,255,255,.12);
-
       --text:        #f0f0f5;
       --text2:       #a0a0b8;
       --text3:       #606078;
-
       --accent:      #7c6af7;
       --accent2:     #a78bfa;
       --accent-glow: rgba(124,106,247,.25);
-
-      --mon:  #f87171; --mon-bg:  rgba(248,113,113,.1);
-      --pct:  #fbbf24; --pct-bg:  rgba(251,191,36,.1);
-      --dat:  #60a5fa; --dat-bg:  rgba(96,165,250,.1);
-      --tim:  #34d399; --tim-bg:  rgba(52,211,153,.1);
-      --cnt:  #a78bfa; --cnt-bg:  rgba(167,139,250,.1);
-      --frc:  #f472b6; --frc-bg:  rgba(244,114,182,.1);
-      --ord:  #fb923c; --ord-bg:  rgba(251,146,60,.1);
-      --apx:  #94a3b8; --apx-bg:  rgba(148,163,184,.1);
-
+      --mon:  #f87171; --mon-bg:  rgba(248,113,113,.12);
+      --pct:  #fbbf24; --pct-bg:  rgba(251,191,36,.12);
+      --dat:  #60a5fa; --dat-bg:  rgba(96,165,250,.12);
+      --tim:  #34d399; --tim-bg:  rgba(52,211,153,.12);
+      --cnt:  #a78bfa; --cnt-bg:  rgba(167,139,250,.12);
+      --frc:  #f472b6; --frc-bg:  rgba(244,114,182,.12);
+      --ord:  #fb923c; --ord-bg:  rgba(251,146,60,.12);
+      --apx:  #94a3b8; --apx-bg:  rgba(148,163,184,.12);
       --radius:  12px;
       --radius2: 8px;
       --font-display: 'Syne', sans-serif;
       --font-body:    'DM Sans', sans-serif;
       --font-mono:    'DM Mono', monospace;
-
       --transition: .2s cubic-bezier(.4,0,.2,1);
+    }
+
+    /* ═══════════════════════════════════════════
+       DESIGN TOKENS — LIGHT
+    ═══════════════════════════════════════════ */
+    [data-theme="light"] {
+      --bg:          #f5f5f8;
+      --bg2:         #ededf2;
+      --bg3:         #e6e6ec;
+      --surface:     #ffffff;
+      --surface2:    #f0f0f5;
+      --border:      rgba(0,0,0,.08);
+      --border2:     rgba(0,0,0,.14);
+      --text:        #0f0f14;
+      --text2:       #4a4a6a;
+      --text3:       #9090aa;
+      --accent:      #6c55f0;
+      --accent2:     #7c6af7;
+      --accent-glow: rgba(108,85,240,.18);
+      --mon:  #dc2626; --mon-bg:  rgba(220,38,38,.08);
+      --pct:  #d97706; --pct-bg:  rgba(217,119,6,.08);
+      --dat:  #2563eb; --dat-bg:  rgba(37,99,235,.08);
+      --tim:  #059669; --tim-bg:  rgba(5,150,105,.08);
+      --cnt:  #7c3aed; --cnt-bg:  rgba(124,58,237,.08);
+      --frc:  #db2777; --frc-bg:  rgba(219,39,119,.08);
+      --ord:  #ea580c; --ord-bg:  rgba(234,88,12,.08);
+      --apx:  #64748b; --apx-bg:  rgba(100,116,139,.08);
+    }
+
+    /* ── Theme toggle ── */
+    .theme-toggle {
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-radius: var(--radius2);
+      color: var(--text2);
+      padding: .42rem .55rem;
+      cursor: pointer;
+      font-size: .95rem;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all var(--transition);
+      flex-shrink: 0;
+    }
+    .theme-toggle:hover {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+      box-shadow: 0 0 14px var(--accent-glow);
+    }
+    [data-theme="dark"]  .icon-sun  { display: inline; }
+    [data-theme="dark"]  .icon-moon { display: none; }
+    [data-theme="light"] .icon-sun  { display: none; }
+    [data-theme="light"] .icon-moon { display: inline; }
+    [data-theme="light"] .topbar {
+      background: rgba(245,245,248,.92);
+      border-bottom-color: var(--border);
     }
 
     /* ═══════════════════════════════════════════
@@ -582,6 +635,12 @@
         </a>
       </li>
     </ul>
+
+    <!-- Theme toggle -->
+    <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme" title="Toggle light/dark mode">
+      <i class="bi bi-sun-fill icon-sun"></i>
+      <i class="bi bi-moon-fill icon-moon"></i>
+    </button>
   </div>
 </header>
 
@@ -613,10 +672,28 @@
 </footer>
 
 <script>
-  // Mobile nav toggle
+  // ── Mobile nav ──────────────────────────────
   document.getElementById('navToggle').addEventListener('click', function() {
     document.getElementById('navLinks').classList.toggle('open');
   });
+
+  // ── Theme toggle ────────────────────────────
+  (function() {
+    const html    = document.documentElement;
+    const btn     = document.getElementById('themeToggle');
+    const STORAGE = 'ner-theme';
+
+    // Apply saved theme immediately (before paint)
+    const saved = localStorage.getItem(STORAGE) || 'dark';
+    html.setAttribute('data-theme', saved);
+
+    btn.addEventListener('click', function() {
+      const current = html.getAttribute('data-theme');
+      const next    = current === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', next);
+      localStorage.setItem(STORAGE, next);
+    });
+  })();
 </script>
 
 {% block extra_js %}{% endblock %}
