@@ -56,7 +56,7 @@ UNITS_ALL: dict = {**UNITS, **TENS}
 # ── Multipliers ───────────────────────────────────────────────────────────────
 MULTIPLIERS: dict = {
     "ju'z":    100,        # officially ju'z  (not jüz)
-    "min'g":   1_000,      # officially min'g (not müng)
+    "min'":   1_000,      # officially min'g (not müng)
     "million":  1_000_000,
     "milyard":  1_000_000_000,
 }
