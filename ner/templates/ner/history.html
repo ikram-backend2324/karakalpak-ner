@@ -1,84 +1,84 @@
 {% extends 'ner/base.html' %}
-
-{% block title %}Analysis history — Karakalpak NER{% endblock %}
+{% block title %}History — Karakalpak NER{% endblock %}
 
 {% block content %}
 
-<div class="d-flex align-items-center justify-content-between mb-4">
+<div class="flex items-center justify-between fade-up" style="margin-bottom:1.5rem;flex-wrap:wrap;gap:1rem;">
   <div>
-    <h4 class="mb-0 fw-bold">
-      <i class="bi bi-clock-history text-primary me-2"></i>Analysis history
-    </h4>
-    <small class="text-muted">
-      {{ total_done }} completed &nbsp;·&nbsp; {{ total_results }} total entities found
-    </small>
+    <h1 class="page-title">Analysis History</h1>
+    <p style="color:var(--text2);font-size:.875rem;margin-top:.35rem;">
+      {{ total_done }} completed &nbsp;·&nbsp; {{ total_results }} total entities
+    </p>
   </div>
   <a href="{% url 'index' %}" class="btn btn-primary">
-    <i class="bi bi-upload me-1"></i>New analysis
+    <i class="bi bi-plus-lg"></i> New analysis
   </a>
 </div>
 
 {% if analyses %}
-<div class="card">
+<div class="card fade-up fade-up-1">
   <div class="table-scroll">
-    <table class="table table-hover table-bordered result-table mb-0">
-      <thead class="table-dark">
+    <table class="ner-table">
+      <thead>
         <tr>
-          <th style="width:60px">#</th>
+          <th style="width:60px;">#</th>
           <th>Filename</th>
-          <th style="width:160px">Date</th>
-          <th style="width:80px">Tokens</th>
-          <th style="width:90px">Entities</th>
-          <th style="width:100px">Status</th>
-          <th style="width:120px">Actions</th>
+          <th style="width:160px;">Date</th>
+          <th style="width:80px;">Tokens</th>
+          <th style="width:90px;">Entities</th>
+          <th style="width:100px;">Status</th>
+          <th style="width:140px;">Actions</th>
         </tr>
       </thead>
       <tbody>
         {% for a in analyses %}
         <tr>
-          <td class="text-center text-muted small">{{ a.pk }}</td>
+          <td style="font-family:var(--font-mono);font-size:.75rem;color:var(--text3);">{{ a.pk }}</td>
           <td>
-            <div class="fw-semibold">{{ a.original_name }}</div>
-            <small class="text-muted font-monospace">{{ a.filename|truncatechars:40 }}</small>
+            <div style="font-weight:500;color:var(--text);font-size:.875rem;">{{ a.original_name }}</div>
+            <div style="font-family:var(--font-mono);font-size:.7rem;color:var(--text3);">
+              {{ a.filename|truncatechars:40 }}
+            </div>
           </td>
-          <td class="small text-muted">{{ a.upload_time|date:"d M Y H:i" }}</td>
-          <td class="text-center">{{ a.token_count }}</td>
-          <td class="text-center">
+          <td style="font-family:var(--font-mono);font-size:.75rem;color:var(--text2);">
+            {{ a.upload_time|date:"d M Y, H:i" }}
+          </td>
+          <td style="font-family:var(--font-mono);font-size:.82rem;color:var(--text2);text-align:center;">
+            {{ a.token_count }}
+          </td>
+          <td style="text-align:center;">
             {% if a.result_count %}
-              <span class="badge bg-success">{{ a.result_count }}</span>
+            <span style="font-family:var(--font-mono);font-size:.82rem;
+                         background:var(--tim-bg);color:var(--tim);
+                         padding:.15rem .6rem;border-radius:4px;">{{ a.result_count }}</span>
             {% else %}
-              <span class="text-muted">—</span>
-            {% endif %}
-          </td>
-          <td class="text-center">
-            <span class="badge bg-{{ a.status_badge }}">{{ a.status }}</span>
-            {% if a.error_message %}
-            <i class="bi bi-exclamation-circle text-danger ms-1"
-               title="{{ a.error_message }}"
-               data-bs-toggle="tooltip"></i>
+            <span style="color:var(--text3);">—</span>
             {% endif %}
           </td>
           <td>
-            <div class="d-flex gap-1">
+            <span style="padding:.15rem .6rem;border-radius:4px;font-size:.72rem;font-family:var(--font-mono);
+                         background:{% if a.status == 'done' %}var(--tim-bg){% elif a.status == 'error' %}var(--mon-bg){% else %}var(--pct-bg){% endif %};
+                         color:{% if a.status == 'done' %}var(--tim){% elif a.status == 'error' %}var(--mon){% else %}var(--pct){% endif %};">
+              {{ a.status }}
+            </span>
+          </td>
+          <td>
+            <div class="flex" style="gap:.35rem;">
               {% if a.status == 'done' %}
-              <a href="{% url 'result' a.pk %}"
-                 class="btn btn-sm btn-outline-primary" title="View results">
+              <a href="{% url 'result' a.pk %}" class="btn btn-ghost btn-sm" title="View">
                 <i class="bi bi-eye"></i>
               </a>
-              <a href="{% url 'download_json' a.pk %}"
-                 class="btn btn-sm btn-outline-success" title="Download JSON">
+              <a href="{% url 'download_json' a.pk %}" class="btn btn-ghost btn-sm" title="JSON">
                 <i class="bi bi-filetype-json"></i>
               </a>
-              <a href="{% url 'download_excel' a.pk %}"
-                 class="btn btn-sm btn-outline-warning" title="Download Excel">
+              <a href="{% url 'download_excel' a.pk %}" class="btn btn-ghost btn-sm" title="Excel">
                 <i class="bi bi-file-earmark-excel"></i>
               </a>
               {% endif %}
               <form method="post" action="{% url 'delete_analysis' a.pk %}"
-                    onsubmit="return confirm('Delete this analysis?')">
+                    onsubmit="return confirm('Delete this analysis?')" style="display:inline;">
                 {% csrf_token %}
-                <button type="submit" class="btn btn-sm btn-outline-danger"
-                        title="Delete">
+                <button type="submit" class="btn btn-danger btn-sm" title="Delete">
                   <i class="bi bi-trash"></i>
                 </button>
               </form>
@@ -92,23 +92,13 @@
 </div>
 
 {% else %}
-<div class="card">
-  <div class="card-body text-center py-5 text-muted">
-    <i class="bi bi-inbox display-4 d-block mb-3 opacity-25"></i>
-    <p>No analyses yet.</p>
-    <a href="{% url 'index' %}" class="btn btn-primary">
-      <i class="bi bi-upload me-1"></i>Upload your first file
-    </a>
-  </div>
+<div class="card fade-up fade-up-1" style="text-align:center;padding:4rem 2rem;">
+  <i class="bi bi-inbox" style="font-size:3rem;color:var(--text3);display:block;margin-bottom:1rem;opacity:.3;"></i>
+  <div style="color:var(--text2);margin-bottom:1.25rem;">No analyses yet</div>
+  <a href="{% url 'index' %}" class="btn btn-primary">
+    <i class="bi bi-upload"></i> Upload your first file
+  </a>
 </div>
 {% endif %}
 
-{% endblock %}
-
-{% block extra_js %}
-<script>
-// Bootstrap tooltips
-document.querySelectorAll('[data-bs-toggle="tooltip"]')
-  .forEach(el => new bootstrap.Tooltip(el));
-</script>
 {% endblock %}
