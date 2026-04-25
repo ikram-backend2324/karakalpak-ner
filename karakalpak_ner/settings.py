@@ -8,7 +8,10 @@ SECRET_KEY = 'django-insecure-karakalpak-ner-rule-based-2024-change-in-productio
 DEBUG = False
 
 ALLOWED_HOSTS = ['*']
-
+CSRF_TRUSTED_ORIGINS = [
+    'https://karakalpak-ner.onrender.com',
+    'http://karakalpak-ner.onrender.com',
+]
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-karakalpak-ner-rule-based-2024-change-in-production')
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
