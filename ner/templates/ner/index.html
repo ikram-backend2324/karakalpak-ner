@@ -1,365 +1,348 @@
 {% extends 'ner/base.html' %}
-
 {% block title %}Karakalpak NER — Upload{% endblock %}
 
 {% block content %}
-<div class="row g-4">
+<div style="display:grid;grid-template-columns:1fr 380px;gap:1.5rem;align-items:start;">
 
-  <!-- ── Left: upload card ── -->
-  <div class="col-lg-7">
-    <div class="card">
-      <div class="card-header bg-white py-3">
-        <h5 class="mb-0 fw-semibold">
-          <i class="bi bi-upload text-primary me-2"></i>
-          Matn faylini yuklang
-        </h5>
-        <small class="text-muted">Qoraqalpoq tilidagi .txt yoki .docx fayl</small>
+  <!-- ── LEFT COLUMN ── -->
+  <div style="display:flex;flex-direction:column;gap:1.5rem;">
+
+    <!-- Hero -->
+    <div class="fade-up" style="padding:.25rem 0 .5rem;">
+      <div style="font-family:var(--font-mono);font-size:.75rem;color:var(--accent2);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.5rem;">
+        Numerical Entity Recognition
       </div>
-      <div class="card-body p-4">
+      <h1 class="page-title" style="font-size:2.2rem;margin-bottom:.5rem;">
+        Analyze Karakalpak Text
+      </h1>
+      <p style="color:var(--text2);max-width:480px;font-size:.95rem;">
+        Upload a document or paste text to extract and normalize all numerical expressions —
+        money, dates, counts, percentages, and more.
+      </p>
+    </div>
 
-        <form method="post" action="{% url 'analyze' %}" enctype="multipart/form-data"
-              id="uploadForm">
+    <!-- Upload Card -->
+    <div class="card fade-up fade-up-1">
+      <div class="card-head">
+        <div class="card-head-title">
+          <i class="bi bi-cloud-upload" style="color:var(--accent2)"></i>
+          Upload Document
+        </div>
+        <span style="font-size:.75rem;color:var(--text3);font-family:var(--font-mono);">.txt · .docx · max 10 MB</span>
+      </div>
+      <div class="card-body">
+        <form method="post" action="{% url 'analyze' %}" enctype="multipart/form-data" id="uploadForm">
           {% csrf_token %}
 
           <!-- Drop zone -->
-          <div id="drop-zone" class="text-center py-5 mb-3"
-               onclick="document.getElementById('fileInput').click()">
-            <i class="bi bi-file-earmark-text display-4 text-primary opacity-50"></i>
-            <p class="mt-2 mb-1 fw-semibold text-primary">
-              Faylni bu yerga tashlang
-            </p>
-            <p class="text-muted small mb-2">yoki yuklash uchun bosing</p>
-            <span class="badge bg-light text-muted border">.txt</span>
-            <span class="badge bg-light text-muted border">.docx</span>
-            <span class="badge bg-light text-muted border">max 10 MB</span>
+          <div id="dropZone" onclick="document.getElementById('fileInput').click()"
+               style="border:1.5px dashed var(--border2);border-radius:var(--radius);
+                      background:rgba(124,106,247,.04);padding:2.5rem 1.5rem;
+                      text-align:center;cursor:pointer;transition:all var(--transition);
+                      margin-bottom:1.25rem;">
+            <div style="width:48px;height:48px;background:var(--surface2);border-radius:12px;
+                        display:flex;align-items:center;justify-content:center;
+                        margin:0 auto .75rem;font-size:1.4rem;color:var(--accent2);">
+              <i class="bi bi-file-earmark-text"></i>
+            </div>
+            <div style="font-weight:600;color:var(--text);margin-bottom:.25rem;">
+              Drop your file here
+            </div>
+            <div style="font-size:.82rem;color:var(--text3);">or click to browse</div>
             {{ form.file }}
-            <p id="chosen-file" class="mt-3 mb-0 fw-semibold text-success d-none">
-              <i class="bi bi-check-circle me-1"></i><span id="file-name"></span>
-            </p>
+            <div id="chosenFile" style="display:none;margin-top:.75rem;font-family:var(--font-mono);
+                                        font-size:.8rem;color:var(--tim);">
+              <i class="bi bi-check-circle-fill"></i> <span id="fileName"></span>
+            </div>
           </div>
 
-          {% if form.file.errors %}
-          <div class="alert alert-danger py-2">{{ form.file.errors }}</div>
-          {% endif %}
-
           <!-- Entity type checkboxes -->
-          <div class="card bg-light border-0 p-3 mb-3">
-            <div class="d-flex align-items-center justify-content-between mb-2">
-              <span class="fw-semibold small">Son turlari (entity types)</span>
-              <div class="d-flex gap-2">
-                <button type="button" class="btn btn-sm btn-outline-primary"
-                        onclick="setAll(true)">Barchasi</button>
-                <button type="button" class="btn btn-sm btn-outline-secondary"
-                        onclick="setAll(false)">Tozalash</button>
+          <div style="margin-bottom:1.25rem;">
+            <div class="flex items-center justify-between" style="margin-bottom:.75rem;">
+              <div style="font-size:.82rem;font-weight:600;color:var(--text2);">Entity types to extract</div>
+              <div class="flex gap-2">
+                <button type="button" onclick="setAll(true)" class="btn btn-ghost btn-sm">All</button>
+                <button type="button" onclick="setAll(false)" class="btn btn-ghost btn-sm">None</button>
               </div>
             </div>
-            <div class="row g-2">
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem;">
               {% for value, label in form.entity_types.field.choices %}
-              <div class="col-6 col-sm-4 col-md-3">
-                <label class="d-flex align-items-center gap-2 small p-2 rounded
-                              border bg-white cursor-pointer entity-label
-                              entity-{{ value }}"
-                       style="cursor:pointer">
-                  <input type="checkbox" name="entity_types" value="{{ value }}"
-                         checked class="form-check-input m-0 entity-cb">
-                  <span class="badge badge-{{ value }} px-2">{{ value }}</span>
-                  <span class="text-muted" style="font-size:.72rem">
-                    {{ label|cut:value|cut:" ("|cut:")"|truncatechars:14 }}
-                  </span>
-                </label>
-              </div>
+              <label style="display:flex;align-items:center;gap:.5rem;padding:.5rem .65rem;
+                            border-radius:var(--radius2);border:1px solid var(--border);
+                            background:var(--bg3);cursor:pointer;font-size:.8rem;
+                            transition:border-color var(--transition);"
+                     class="entity-label" data-type="{{ value }}">
+                <input type="checkbox" name="entity_types" value="{{ value }}"
+                       checked class="entity-cb" style="accent-color:var(--accent);">
+                <span class="badge badge-{{ value }}">{{ value }}</span>
+              </label>
               {% endfor %}
             </div>
           </div>
 
           <!-- Submit -->
-          <button type="submit" class="btn btn-primary btn-lg w-100 fw-semibold"
-                  id="submitBtn">
-            <i class="bi bi-search me-2"></i>TAHLIL BOSHLASH
+          <button type="submit" class="btn btn-primary btn-lg" id="submitBtn"
+                  style="width:100%;justify-content:center;">
+            <i class="bi bi-search"></i>
+            Analyze Document
           </button>
 
-          <!-- Progress (shown after submit) -->
-          <div id="upload-progress" class="mt-3">
-            <div class="d-flex align-items-center gap-2 text-muted small mb-1">
-              <span class="spinner-border spinner-border-sm"></span>
-              <span>Analyzing… please wait</span>
+          <!-- Progress -->
+          <div id="uploadProgress" style="display:none;margin-top:1rem;">
+            <div class="flex items-center gap-2" style="font-size:.82rem;color:var(--text2);margin-bottom:.5rem;">
+              <svg width="16" height="16" viewBox="0 0 16 16" style="animation:spin 1s linear infinite;flex-shrink:0;">
+                <circle cx="8" cy="8" r="6" fill="none" stroke="var(--accent)" stroke-width="2" stroke-dasharray="28" stroke-dashoffset="8"/>
+              </svg>
+              Analyzing your document…
             </div>
-            <div class="progress" style="height:6px">
-              <div class="progress-bar progress-bar-striped progress-bar-animated
-                          w-100"></div>
+            <div style="height:3px;background:var(--surface2);border-radius:2px;overflow:hidden;">
+              <div style="height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));
+                          border-radius:2px;animation:progress 2s ease-in-out infinite;width:60%;"></div>
             </div>
           </div>
         </form>
-
       </div>
     </div>
 
-    <!-- Quick demo box -->
-    <div class="card mt-3">
-      <div class="card-header bg-white py-2">
-        <h6 class="mb-0 fw-semibold">
-          <i class="bi bi-lightning text-warning me-1"></i>
-          Inline text demo
-        </h6>
+    <!-- Inline Demo -->
+    <div class="card fade-up fade-up-2">
+      <div class="card-head">
+        <div class="card-head-title">
+          <i class="bi bi-lightning-fill" style="color:var(--pct)"></i>
+          Quick text demo
+        </div>
+        <button onclick="loadSample()" class="btn btn-ghost btn-sm">
+          <i class="bi bi-arrow-repeat"></i> Load sample
+        </button>
       </div>
-      <div class="card-body p-3">
-        <textarea id="demoText" class="form-control font-monospace"
-                  rows="4"
-                  placeholder="Matn kiriting..."></textarea>
-        <div class="d-flex gap-2 mt-2">
-          <button class="btn btn-sm btn-outline-primary" onclick="runDemo()">
-            <i class="bi bi-play me-1"></i>Analyze text
-          </button>
-          <button class="btn btn-sm btn-outline-secondary" onclick="loadSample()">
-            Load sample
+      <div class="card-body">
+        <textarea id="demoText" rows="4"
+          placeholder="Paste Karakalpak text here, e.g.: Rayonda 2024-jilda to'rt min'g gektar jerge egindilik ekildi. Jigirma bes procent osti."
+          style="width:100%;background:var(--bg3);border:1px solid var(--border);
+                 border-radius:var(--radius2);padding:.75rem 1rem;color:var(--text);
+                 font-family:var(--font-mono);font-size:.82rem;resize:vertical;
+                 outline:none;transition:border-color var(--transition);line-height:1.6;"
+          onfocus="this.style.borderColor='var(--accent)'"
+          onblur="this.style.borderColor='var(--border)'"></textarea>
+        <div class="flex" style="gap:.5rem;margin-top:.75rem;">
+          <button onclick="runDemo()" class="btn btn-primary btn-sm">
+            <i class="bi bi-play-fill"></i> Analyze
           </button>
         </div>
-        <div id="demo-result" class="mt-3"></div>
+        <div id="demoResult" style="margin-top:1rem;"></div>
       </div>
     </div>
   </div>
 
-  <!-- ── Right: stats ── -->
-  <div class="col-lg-5">
+  <!-- ── RIGHT COLUMN ── -->
+  <div style="display:flex;flex-direction:column;gap:1.25rem;position:sticky;top:80px;">
 
-    <!-- Stats cards -->
-    <div class="row g-3 mb-3">
-      <div class="col-6">
-        <div class="stat-card bg-primary text-white">
-          <div class="stat-num">{{ total_analyses }}</div>
-          <div class="stat-label">Total analyses</div>
-        </div>
+    <!-- Stats -->
+    <div class="grid-2 fade-up">
+      <div class="stat-card">
+        <div class="stat-num">{{ total_analyses }}</div>
+        <div class="stat-label">Analyses</div>
       </div>
-      <div class="col-6">
-        <div class="stat-card bg-success text-white">
-          <div class="stat-num">{{ total_results }}</div>
-          <div class="stat-label">Entities found</div>
-        </div>
+      <div class="stat-card">
+        <div class="stat-num">{{ total_results }}</div>
+        <div class="stat-label">Entities</div>
       </div>
     </div>
 
     <!-- Type breakdown -->
     {% if type_totals %}
-    <div class="card mb-3">
-      <div class="card-header bg-white py-2">
-        <h6 class="mb-0 fw-semibold">
-          <i class="bi bi-bar-chart me-1 text-primary"></i>
-          Entity type breakdown
-        </h6>
+    <div class="card fade-up fade-up-1">
+      <div class="card-head">
+        <div class="card-head-title">
+          <i class="bi bi-bar-chart-fill" style="color:var(--accent2)"></i>
+          Entity breakdown
+        </div>
       </div>
-      <div class="card-body p-3">
+      <div class="card-body" style="display:flex;flex-direction:column;gap:.6rem;">
         {% for etype, cnt in type_totals.items %}
-        <div class="d-flex align-items-center mb-2">
-          <span class="badge badge-{{ etype }} me-2" style="min-width:42px">{{ etype }}</span>
-          <div class="flex-grow-1 me-2">
-            <div class="progress" style="height:8px;border-radius:4px">
-              <div class="progress-bar bg-primary"
-                   style="width:{% widthratio cnt total_results 100 %}%"></div>
-            </div>
+        <div class="flex items-center" style="gap:.75rem;">
+          <span class="badge badge-{{ etype }}" style="min-width:44px;justify-content:center;">{{ etype }}</span>
+          <div style="flex:1;height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;">
+            <div style="height:100%;border-radius:3px;background:var(--accent);
+                        width:{% widthratio cnt total_results 100 %}%;
+                        transition:width .6s ease;"></div>
           </div>
-          <span class="small fw-semibold">{{ cnt }}</span>
+          <span style="font-family:var(--font-mono);font-size:.78rem;color:var(--text2);min-width:24px;text-align:right;">{{ cnt }}</span>
         </div>
         {% endfor %}
       </div>
     </div>
     {% endif %}
 
-    <!-- Recent analyses -->
+    <!-- Recent -->
     {% if recent %}
-    <div class="card">
-      <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
-        <h6 class="mb-0 fw-semibold">
-          <i class="bi bi-clock-history me-1 text-primary"></i>Recent
-        </h6>
-        <a href="{% url 'history' %}" class="btn btn-sm btn-outline-primary">All</a>
+    <div class="card fade-up fade-up-2">
+      <div class="card-head">
+        <div class="card-head-title">
+          <i class="bi bi-clock-history" style="color:var(--text3)"></i>
+          Recent
+        </div>
+        <a href="{% url 'history' %}" class="btn btn-ghost btn-sm">View all</a>
       </div>
-      <ul class="list-group list-group-flush">
+      <div>
         {% for a in recent %}
-        <li class="list-group-item d-flex justify-content-between align-items-center py-2">
-          <div>
-            <div class="small fw-semibold text-truncate" style="max-width:180px">
+        <a href="{% url 'result' a.pk %}" style="display:flex;align-items:center;gap:.75rem;
+           padding:.75rem 1.25rem;border-bottom:1px solid var(--border);
+           text-decoration:none;transition:background var(--transition);"
+           onmouseover="this.style.background='rgba(255,255,255,.03)'"
+           onmouseout="this.style.background='transparent'">
+          <div style="width:32px;height:32px;background:var(--surface2);border-radius:8px;
+                      display:flex;align-items:center;justify-content:center;
+                      font-size:.85rem;color:var(--accent2);flex-shrink:0;">
+            <i class="bi bi-file-text"></i>
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:.82rem;font-weight:500;color:var(--text);
+                        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
               {{ a.original_name }}
             </div>
-            <div class="text-muted" style="font-size:.72rem">
-              {{ a.upload_time|date:"d M Y H:i" }}
+            <div style="font-size:.72rem;color:var(--text3);font-family:var(--font-mono);">
+              {{ a.upload_time|date:"d M, H:i" }}
             </div>
           </div>
-          <div class="d-flex align-items-center gap-2">
-            <span class="badge bg-success">{{ a.result_count }}</span>
-            <a href="{% url 'result' a.pk %}" class="btn btn-sm btn-outline-primary">
-              <i class="bi bi-eye"></i>
-            </a>
-          </div>
-        </li>
+          <span style="font-family:var(--font-mono);font-size:.78rem;
+                       color:var(--tim);background:var(--tim-bg);
+                       padding:.15rem .5rem;border-radius:4px;">{{ a.result_count }}</span>
+        </a>
         {% endfor %}
-      </ul>
+      </div>
     </div>
     {% endif %}
 
-    <!-- Entity type legend -->
-    <div class="card mt-3">
-      <div class="card-header bg-white py-2">
-        <h6 class="mb-0 fw-semibold">
-          <i class="bi bi-info-circle me-1 text-primary"></i>Entity types
-        </h6>
-      </div>
-      <div class="card-body p-3">
-        <div class="row g-1">
-          {% for etype, desc in entity_legend %}
-          <div class="col-12">
-            <div class="d-flex align-items-start gap-2 mb-1">
-              <span class="badge badge-{{ etype }}" style="min-width:42px;margin-top:1px">{{ etype }}</span>
-              <small class="text-muted">{{ desc }}</small>
-            </div>
-          </div>
-          {% empty %}
-          <div class="col-12"><div class="d-flex align-items-start gap-2 mb-1">
-            <span class="badge badge-MON" style="min-width:42px;margin-top:1px">MON</span>
-            <small class="text-muted">Pul ifodalari (sum, tenge...)</small>
-          </div></div>
-          <div class="col-12"><div class="d-flex align-items-start gap-2 mb-1">
-            <span class="badge badge-PCT" style="min-width:42px;margin-top:1px">PCT</span>
-            <small class="text-muted">Foizli sonlar (%)</small>
-          </div></div>
-          <div class="col-12"><div class="d-flex align-items-start gap-2 mb-1">
-            <span class="badge badge-DAT" style="min-width:42px;margin-top:1px">DAT</span>
-            <small class="text-muted">Sanalar (2024-jılı...)</small>
-          </div></div>
-          <div class="col-12"><div class="d-flex align-items-start gap-2 mb-1">
-            <span class="badge badge-TIM" style="min-width:42px;margin-top:1px">TIM</span>
-            <small class="text-muted">Vaqt (saat 14:00)</small>
-          </div></div>
-          <div class="col-12"><div class="d-flex align-items-start gap-2 mb-1">
-            <span class="badge badge-CNT" style="min-width:42px;margin-top:1px">CNT</span>
-            <small class="text-muted">Sanoq sonlar (to'rt ming gektar)</small>
-          </div></div>
-          <div class="col-12"><div class="d-flex align-items-start gap-2 mb-1">
-            <span class="badge badge-FRC" style="min-width:42px;margin-top:1px">FRC</span>
-            <small class="text-muted">Kasrli sonlar (1.5)</small>
-          </div></div>
-          <div class="col-12"><div class="d-flex align-items-start gap-2 mb-1">
-            <span class="badge badge-ORD" style="min-width:42px;margin-top:1px">ORD</span>
-            <small class="text-muted">Tartibli sonlar (ushinshi)</small>
-          </div></div>
-          <div class="col-12"><div class="d-flex align-items-start gap-2 mb-1">
-            <span class="badge badge-APX" style="min-width:42px;margin-top:1px">APX</span>
-            <small class="text-muted">Taxminiy sonlar (bir neshe)</small>
-          </div></div>
-          {% endfor %}
+    <!-- Legend -->
+    <div class="card fade-up fade-up-3">
+      <div class="card-head">
+        <div class="card-head-title">
+          <i class="bi bi-info-circle" style="color:var(--text3)"></i>
+          Entity types
         </div>
+      </div>
+      <div class="card-body" style="display:flex;flex-direction:column;gap:.5rem;">
+        {% for etype, desc in legend %}
+        <div class="flex items-center" style="gap:.65rem;">
+          <span class="badge badge-{{ etype }}" style="min-width:44px;justify-content:center;">{{ etype }}</span>
+          <span style="font-size:.8rem;color:var(--text2);">{{ desc }}</span>
+        </div>
+        {% empty %}
+        {% for pair in "MON,Pul ifodalari|PCT,Foizli sonlar|DAT,Sanalar|TIM,Vaqt|CNT,Sanoq sonlar|FRC,Kasrlar|ORD,Tartib sonlar|APX,Taxminiy"|split:"," %}{% endfor %}
+        <div class="flex items-center" style="gap:.65rem;"><span class="badge badge-MON" style="min-width:44px;justify-content:center;">MON</span><span style="font-size:.8rem;color:var(--text2);">Pul ifodalari</span></div>
+        <div class="flex items-center" style="gap:.65rem;"><span class="badge badge-PCT" style="min-width:44px;justify-content:center;">PCT</span><span style="font-size:.8rem;color:var(--text2);">Foizli sonlar</span></div>
+        <div class="flex items-center" style="gap:.65rem;"><span class="badge badge-DAT" style="min-width:44px;justify-content:center;">DAT</span><span style="font-size:.8rem;color:var(--text2);">Sanalar</span></div>
+        <div class="flex items-center" style="gap:.65rem;"><span class="badge badge-TIM" style="min-width:44px;justify-content:center;">TIM</span><span style="font-size:.8rem;color:var(--text2);">Vaqt ifodalari</span></div>
+        <div class="flex items-center" style="gap:.65rem;"><span class="badge badge-CNT" style="min-width:44px;justify-content:center;">CNT</span><span style="font-size:.8rem;color:var(--text2);">Sanoq sonlar</span></div>
+        <div class="flex items-center" style="gap:.65rem;"><span class="badge badge-FRC" style="min-width:44px;justify-content:center;">FRC</span><span style="font-size:.8rem;color:var(--text2);">Kasrli sonlar</span></div>
+        <div class="flex items-center" style="gap:.65rem;"><span class="badge badge-ORD" style="min-width:44px;justify-content:center;">ORD</span><span style="font-size:.8rem;color:var(--text2);">Tartib sonlar</span></div>
+        <div class="flex items-center" style="gap:.65rem;"><span class="badge badge-APX" style="min-width:44px;justify-content:center;">APX</span><span style="font-size:.8rem;color:var(--text2);">Taxminiy sonlar</span></div>
+        {% endfor %}
       </div>
     </div>
 
   </div>
 </div>
+
+<!-- Responsive: stack on mobile -->
+<style>
+  @media (max-width: 900px) {
+    .page-wrap > div { grid-template-columns: 1fr !important; }
+    .page-wrap > div > div:last-child { position: static !important; }
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes progress {
+    0%   { transform: translateX(-100%); }
+    50%  { transform: translateX(60%); }
+    100% { transform: translateX(200%); }
+  }
+  #fileInput { display: none !important; }
+  #dropZone:hover { border-color: var(--accent) !important; background: rgba(124,106,247,.08) !important; }
+</style>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-const SAMPLE = `Rayonda 2024-jılı tórt mıń gektar jerge egin ekildi.
-Bul ótken jılǵıdan jigirma bes payız kóp.
-Kompaniya bes júz mıń sum dáramat aldı.
-Úshinshi kvartalda saat on ekide jıyılıs bolıp ótti.
-Bir pútin onnan bes million dollar investiciya kiritildi.
-Birinshi orında turǵan student múkápatlandı.
-Bir neshe adam bul jumısqa qatnastı..`;
+const SAMPLE = "Rayonda 2024-jilda to'rt min'g gektar jerge egindilik ekildi.\nJigirma bes procent osti.\nKompaniya bes ju'z min'g so'm daromad aldi.\nU'shinshi kvartalda saat on u'sh da jiyilis bolip o'tti.\nBirinshi orninda turgan talaba mukafatlandirildi.\nBirneshe adam bu jumisqa qatnasti.";
 
-// ── Drag-and-drop ──────────────────────────────────────
-const dropZone  = document.getElementById('drop-zone');
+const dropZone  = document.getElementById('dropZone');
 const fileInput = document.getElementById('fileInput');
-const chosenBox = document.getElementById('chosen-file');
-const fileNameEl= document.getElementById('file-name');
 
-dropZone.addEventListener('dragover', e => {
-  e.preventDefault();
-  dropZone.classList.add('drag-over');
-});
-dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.style.borderColor = 'var(--accent)'; dropZone.style.background = 'rgba(124,106,247,.08)'; });
+dropZone.addEventListener('dragleave', () => { dropZone.style.borderColor = 'var(--border2)'; dropZone.style.background = 'rgba(124,106,247,.04)'; });
 dropZone.addEventListener('drop', e => {
   e.preventDefault();
-  dropZone.classList.remove('drag-over');
-  const file = e.dataTransfer.files[0];
-  if (file) {
-    fileInput.files = e.dataTransfer.files;
-    showFileName(file.name);
-  }
+  dropZone.style.borderColor = 'var(--border2)';
+  dropZone.style.background = 'rgba(124,106,247,.04)';
+  if (e.dataTransfer.files[0]) { fileInput.files = e.dataTransfer.files; showFile(e.dataTransfer.files[0].name); }
 });
-fileInput.addEventListener('change', () => {
-  if (fileInput.files[0]) showFileName(fileInput.files[0].name);
-});
-function showFileName(name) {
-  fileNameEl.textContent = name;
-  chosenBox.classList.remove('d-none');
+fileInput.addEventListener('change', () => { if (fileInput.files[0]) showFile(fileInput.files[0].name); });
+
+function showFile(name) {
+  document.getElementById('fileName').textContent = name;
+  document.getElementById('chosenFile').style.display = 'block';
+  dropZone.style.borderColor = 'var(--tim)';
 }
 
-// ── Upload progress ────────────────────────────────────
 document.getElementById('uploadForm').addEventListener('submit', function(e) {
-  if (!fileInput.files[0]) {
-    e.preventDefault();
-    alert('Please select a file first.');
-    return;
-  }
-  document.getElementById('upload-progress').style.display = 'block';
+  if (!fileInput.files[0]) { e.preventDefault(); alert('Please select a file first.'); return; }
+  document.getElementById('uploadProgress').style.display = 'block';
   document.getElementById('submitBtn').disabled = true;
+  document.getElementById('submitBtn').style.opacity = '.6';
 });
 
-// ── Checkbox helpers ───────────────────────────────────
 function setAll(checked) {
   document.querySelectorAll('.entity-cb').forEach(cb => cb.checked = checked);
 }
 
-// ── Inline demo ────────────────────────────────────────
 function loadSample() {
   document.getElementById('demoText').value = SAMPLE;
 }
 
+const TYPE_COLORS = { MON:'--mon', PCT:'--pct', DAT:'--dat', TIM:'--tim', CNT:'--cnt', FRC:'--frc', ORD:'--ord', APX:'--apx' };
+
 async function runDemo() {
   const text = document.getElementById('demoText').value.trim();
   if (!text) { alert('Please enter some text.'); return; }
-  const resultDiv = document.getElementById('demo-result');
-  resultDiv.innerHTML = '<div class="text-muted small"><span class="spinner-border spinner-border-sm me-1"></span>Analyzing…</div>';
-
+  const rd = document.getElementById('demoResult');
+  rd.innerHTML = '<div style="display:flex;align-items:center;gap:.5rem;font-size:.82rem;color:var(--text2);"><svg width="16" height="16" viewBox="0 0 16 16" style="animation:spin 1s linear infinite;"><circle cx="8" cy="8" r="6" fill="none" stroke="var(--accent)" stroke-width="2" stroke-dasharray="28" stroke-dashoffset="8"/></svg> Analyzing…</div>';
   try {
     const resp = await fetch('{% url "api_analyze" %}', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRFToken': '{{ csrf_token }}',
-      },
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
       body: JSON.stringify({ text }),
     });
     const data = await resp.json();
-    if (data.error) { resultDiv.innerHTML = `<div class="alert alert-danger">${data.error}</div>`; return; }
-    if (!data.items.length) {
-      resultDiv.innerHTML = '<div class="text-muted small">No entities found.</div>';
-      return;
-    }
+    if (data.error) { rd.innerHTML = `<div style="color:var(--mon);font-size:.82rem;">${data.error}</div>`; return; }
+    if (!data.items.length) { rd.innerHTML = '<div style="color:var(--text3);font-size:.82rem;">No entities found.</div>'; return; }
 
-    const TYPE_COLORS = {
-      MON:'badge-MON',PCT:'badge-PCT',DAT:'badge-DAT',TIM:'badge-TIM',
-      CNT:'badge-CNT',FRC:'badge-FRC',ORD:'badge-ORD',APX:'badge-APX'
-    };
+    const rows = data.items.map((r, i) => {
+      const c = TYPE_COLORS[r.type] || '--text2';
+      const confW = Math.round(r.confidence * 100);
+      return `<tr>
+        <td style="color:var(--text3);font-family:var(--font-mono);font-size:.75rem;">${i+1}</td>
+        <td><span class="badge badge-${r.type}">${r.type}</span></td>
+        <td style="font-family:var(--font-mono);font-size:.8rem;color:var(--text2);">${r.raw}</td>
+        <td style="font-weight:600;color:var(${c});">${r.formatted}</td>
+        <td>
+          <div class="conf-bar"><div class="conf-fill" style="width:${confW}%"></div></div>
+        </td>
+      </tr>`;
+    }).join('');
 
-    let rows = data.items.map((r,i) => `
-      <tr>
-        <td class="text-muted small">${i+1}</td>
-        <td><span class="badge ${TYPE_COLORS[r.type]||'bg-secondary'}">${r.type}</span></td>
-        <td><em>${r.raw}</em></td>
-        <td><strong>${r.formatted}</strong></td>
-      </tr>`).join('');
-
-    resultDiv.innerHTML = `
-      <div class="small text-muted mb-1">${data.count} entity found in ${data.token_count} tokens</div>
+    rd.innerHTML = `
+      <div style="font-size:.75rem;color:var(--text3);font-family:var(--font-mono);margin-bottom:.5rem;">
+        ${data.count} entities · ${data.token_count} tokens
+      </div>
       <div class="table-scroll">
-        <table class="table table-sm table-bordered result-table mb-0">
-          <thead class="table-light">
-            <tr><th>#</th><th>Type</th><th>Raw</th><th>Normalized</th></tr>
-          </thead>
+        <table class="ner-table">
+          <thead><tr><th>#</th><th>Type</th><th>Raw</th><th>Normalized</th><th>Conf</th></tr></thead>
           <tbody>${rows}</tbody>
         </table>
       </div>`;
   } catch(err) {
-    resultDiv.innerHTML = `<div class="alert alert-danger">${err.message}</div>`;
+    rd.innerHTML = `<div style="color:var(--mon);font-size:.82rem;">${err.message}</div>`;
   }
 }
 </script>
