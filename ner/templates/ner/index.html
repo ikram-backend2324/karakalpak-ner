@@ -1,5 +1,5 @@
 {% extends 'ner/base.html' %}
-{% block title %}Karakalpak NER — Upload{% endblock %}
+{% block title %}NLP_NumberDok — Upload{% endblock %}
 
 {% block content %}
 <div style="display:grid;grid-template-columns:1fr 380px;gap:1.5rem;align-items:start;">
@@ -13,7 +13,7 @@
         <span data-i18n="hero_tag">Numerical Entity Recognition</span>
       </div>
       <h1 class="page-title" style="font-size:2.2rem;margin-bottom:.5rem;">
-        <span data-i18n="hero_title">Analyze Karakalpak Text</span>
+        <span data-i18n="hero_title">Analyze Text</span>
       </h1>
       <p style="color:var(--text2);max-width:480px;font-size:.95rem;">
         <span data-i18n="hero_sub">Upload a document or paste text to extract and normalize all numerical expressions — money, dates, counts, percentages, and more.</span>
@@ -229,7 +229,7 @@
           <span style="font-size:.8rem;color:var(--text2);">{{ desc }}</span>
         </div>
         {% empty %}
-      
+
         <div class="flex items-center" style="gap:.65rem;"><span class="badge badge-MON" style="min-width:44px;justify-content:center;">MON</span><span style="font-size:.8rem;color:var(--text2);" data-i18n="type_MON">Pul ifodalari</span></div>
         <div class="flex items-center" style="gap:.65rem;"><span class="badge badge-PCT" style="min-width:44px;justify-content:center;">PCT</span><span style="font-size:.8rem;color:var(--text2);" data-i18n="type_PCT">Foizli sonlar</span></div>
         <div class="flex items-center" style="gap:.65rem;"><span class="badge badge-DAT" style="min-width:44px;justify-content:center;">DAT</span><span style="font-size:.8rem;color:var(--text2);" data-i18n="type_DAT">Sanalar</span></div>
