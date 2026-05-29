@@ -1,0 +1,144 @@
+{% extends 'ner/base.html' %}
+{% block title %}Results — {{ analysis.original_name }}{% endblock %}
+
+{% block content %}
+
+<!-- Breadcrumb -->
+<nav class="breadcrumb">
+  <a href="{% url 'index' %}">Home</a>
+  <span class="breadcrumb-sep">/</span>
+  <a href="{% url 'history' %}">History</a>
+  <span class="breadcrumb-sep">/</span>
+  <span>Analysis #{{ analysis.pk }}</span>
+</nav>
+
+<!-- Header -->
+<div class="flex items-center justify-between fade-up" style="margin-bottom:1.5rem;flex-wrap:wrap;gap:1rem;">
+  <div>
+    <h1 class="page-title" style="font-size:1.4rem;">{{ analysis.original_name }}</h1>
+    <div style="display:flex;align-items:center;gap:1rem;margin-top:.35rem;flex-wrap:wrap;">
+      <span style="font-family:var(--font-mono);font-size:.75rem;color:var(--text3);">
+        {{ analysis.upload_time|date:"d M Y, H:i" }}
+      </span>
+      <span style="font-family:var(--font-mono);font-size:.75rem;color:var(--text3);">
+        {{ analysis.token_count }} tokens
+      </span>
+      <span style="padding:.15rem .6rem;border-radius:4px;font-size:.72rem;font-family:var(--font-mono);
+                   background:{% if analysis.status == 'done' %}var(--tim-bg){% else %}var(--mon-bg){% endif %};
+                   color:{% if analysis.status == 'done' %}var(--tim){% else %}var(--mon){% endif %};">
+        {{ analysis.status }}
+      </span>
+    </div>
+  </div>
+  <div class="flex" style="gap:.5rem;flex-wrap:wrap;">
+    <a href="{% url 'download_json' analysis.pk %}" class="btn btn-success btn-sm">
+      <i class="bi bi-filetype-json"></i> JSON
+    </a>
+    <a href="{% url 'download_excel' analysis.pk %}" class="btn btn-warning btn-sm">
+      <i class="bi bi-file-earmark-excel"></i> Excel
+    </a>
+    <a href="{% url 'index' %}" class="btn btn-primary btn-sm">
+      <i class="bi bi-plus-lg"></i> <span data-i18n="btn_new">New analysis</span>
+    </a>
+  </div>
+</div>
+
+<!-- Stat cards -->
+<div class="grid-4 fade-up fade-up-1" style="margin-bottom:1.5rem;">
+  <div class="stat-card">
+    <div class="stat-num">{{ analysis.result_count }}</div>
+    <div class="stat-label" data-i18n="res_total">Total entities</div>
+  </div>
+  {% for etype, cnt in type_counts.items %}
+  <div class="stat-card" style="border-color:rgba(var(--cnt-rgb),.2);">
+    <div class="stat-num" style="font-size:1.5rem;color:var(--{{ etype|lower }},var(--accent2));">{{ cnt }}</div>
+    <div style="display:flex;align-items:center;gap:.4rem;margin-top:.1rem;">
+      <span class="badge badge-{{ etype }}">{{ etype }}</span>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Filter pills -->
+<div class="flex flex-wrap fade-up fade-up-2" style="gap:.5rem;margin-bottom:1.25rem;">
+  <a href="?type=ALL" class="filter-pill {% if active_type == 'ALL' %}active{% endif %}">
+    <span data-i18n="btn_all">All</span> <span style="opacity:.7;">{{ analysis.result_count }}</span>
+  </a>
+  {% for etype, cnt in type_counts.items %}
+  <a href="?type={{ etype }}" class="filter-pill {% if active_type == etype %}active{% endif %}">
+    <span class="badge badge-{{ etype }}">{{ etype }}</span>
+    {{ cnt }}
+  </a>
+  {% endfor %}
+</div>
+
+<!-- Results table -->
+<div class="card fade-up fade-up-3">
+  <div class="card-head">
+    <div class="card-head-title">
+      <i class="bi bi-table" style="color:var(--accent2)"></i>
+      <span data-i18n="res_extracted">Extracted entities</span>
+      {% if active_type != 'ALL' %}
+        <span class="badge badge-{{ active_type }}">{{ active_type }}</span>
+      {% endif %}
+    </div>
+    <span style="font-size:.75rem;color:var(--text3);font-family:var(--font-mono);">{{ results|length }} rows</span>
+  </div>
+
+  {% if results %}
+  <div class="table-scroll">
+    <table class="ner-table">
+      <thead>
+        <tr>
+          <th style="width:50px;">#</th>
+          <th style="width:70px;">Type</th>
+          <th data-i18n="res_raw">Raw expression</th>
+          <th data-i18n="res_norm">Normalized value</th>
+          <th style="width:80px;" data-i18n="res_unit">Unit</th>
+          <th style="width:80px;" data-i18n="res_conf">Confidence</th>
+          <th style="width:80px;" data-i18n="res_sent">Sentence</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in results %}
+        <tr>
+          <td style="font-family:var(--font-mono);font-size:.75rem;color:var(--text3);">{{ forloop.counter }}</td>
+          <td><span class="badge badge-{{ r.entity_type }}">{{ r.entity_type }}</span></td>
+          <td>
+            <span style="font-family:var(--font-mono);font-size:.82rem;color:var(--text2);">{{ r.raw_value }}</span>
+          </td>
+          <td>
+            <span style="font-weight:600;color:var(--text);">{{ r.norm_value }}</span>
+          </td>
+          <td style="font-family:var(--font-mono);font-size:.75rem;color:var(--text3);">{{ r.unit }}</td>
+          <td>
+            <div style="display:flex;align-items:center;gap:.5rem;">
+              <div class="conf-bar">
+                <div class="conf-fill" style="width:{{ r.confidence|default:0.7|floatformat:0 }}%;"></div>
+              </div>
+            </div>
+          </td>
+          <td style="font-family:var(--font-mono);font-size:.75rem;color:var(--text3);text-align:center;">
+            {{ r.sent_idx|add:1 }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div style="padding:3rem;text-align:center;color:var(--text3);">
+    <i class="bi bi-inbox" style="font-size:2rem;display:block;margin-bottom:.75rem;opacity:.3;"></i>
+    <span data-i18n="res_empty">No entities found</span>
+    {% if active_type != 'ALL' %}for type <span class="badge badge-{{ active_type }}">{{ active_type }}</span>{% endif %}
+  </div>
+  {% endif %}
+</div>
+
+<style>
+  /* Dynamic confidence fill width from template — use CSS variable trick */
+  {% for r in results %}
+  {% endfor %}
+</style>
+
+{% endblock %}

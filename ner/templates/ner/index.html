@@ -1,0 +1,349 @@
+{% extends 'ner/base.html' %}
+{% block title %}NLP_NumberDok — Upload{% endblock %}
+
+{% block content %}
+<div style="display:grid;grid-template-columns:1fr 380px;gap:1.5rem;align-items:start;">
+
+  <!-- ── LEFT COLUMN ── -->
+  <div style="display:flex;flex-direction:column;gap:1.5rem;">
+
+    <!-- Hero -->
+    <div class="fade-up" style="padding:.25rem 0 .5rem;">
+      <div style="font-family:var(--font-mono);font-size:.75rem;color:var(--accent2);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.5rem;">
+        <span data-i18n="hero_tag">Numerical Entity Recognition</span>
+      </div>
+      <h1 class="page-title" style="font-size:2.2rem;margin-bottom:.5rem;">
+        <span data-i18n="hero_title">Analyze Text</span>
+      </h1>
+      <p style="color:var(--text2);max-width:480px;font-size:.95rem;">
+        <span data-i18n="hero_sub">Upload a document or paste text to extract and normalize all numerical expressions — money, dates, counts, percentages, and more.</span>
+      </p>
+    </div>
+
+    <!-- Upload Card -->
+    <div class="card fade-up fade-up-1">
+      <div class="card-head">
+        <div class="card-head-title">
+          <i class="bi bi-cloud-upload" style="color:var(--accent2)"></i>
+          <span data-i18n="upload_title">Upload Document</span>
+        </div>
+        <span style="font-size:.75rem;color:var(--text3);font-family:var(--font-mono);" data-i18n="upload_hint">.txt · .docx · max 10 MB</span>
+      </div>
+      <div class="card-body">
+        <form method="post" action="{% url 'analyze' %}" enctype="multipart/form-data" id="uploadForm">
+          {% csrf_token %}
+
+          <!-- Drop zone -->
+          <div id="dropZone" onclick="document.getElementById('fileInput').click()"
+               style="border:1.5px dashed var(--border2);border-radius:var(--radius);
+                      background:rgba(124,106,247,.04);padding:2.5rem 1.5rem;
+                      text-align:center;cursor:pointer;transition:all var(--transition);
+                      margin-bottom:1.25rem;">
+            <div style="width:48px;height:48px;background:var(--surface2);border-radius:12px;
+                        display:flex;align-items:center;justify-content:center;
+                        margin:0 auto .75rem;font-size:1.4rem;color:var(--accent2);">
+              <i class="bi bi-file-earmark-text"></i>
+            </div>
+            <div style="font-weight:600;color:var(--text);margin-bottom:.25rem;">
+              <span data-i18n="drop_title">Drop your file here</span>
+            </div>
+            <div style="font-size:.82rem;color:var(--text3);" data-i18n="drop_sub">or click to browse</div>
+            {{ form.file }}
+            <div id="chosenFile" style="display:none;margin-top:.75rem;font-family:var(--font-mono);
+                                        font-size:.8rem;color:var(--tim);">
+              <i class="bi bi-check-circle-fill"></i> <span id="fileName"></span>
+            </div>
+          </div>
+
+          <!-- Entity type checkboxes -->
+          <div style="margin-bottom:1.25rem;">
+            <div class="flex items-center justify-between" style="margin-bottom:.75rem;">
+              <div style="font-size:.82rem;font-weight:600;color:var(--text2);" data-i18n="entity_label">Entity types to extract</div>
+              <div class="flex gap-2">
+                <button type="button" onclick="setAll(true)" class="btn btn-ghost btn-sm" data-i18n="btn_all">All</button>
+                <button type="button" onclick="setAll(false)" class="btn btn-ghost btn-sm" data-i18n="btn_none">None</button>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem;">
+              {% for value, label in form.entity_types.field.choices %}
+              <label style="display:flex;align-items:center;gap:.5rem;padding:.5rem .65rem;
+                            border-radius:var(--radius2);border:1px solid var(--border);
+                            background:var(--bg3);cursor:pointer;font-size:.8rem;
+                            transition:border-color var(--transition);"
+                     class="entity-label" data-type="{{ value }}">
+                <input type="checkbox" name="entity_types" value="{{ value }}"
+                       checked class="entity-cb" style="accent-color:var(--accent);">
+                <span class="badge badge-{{ value }}">{{ value }}</span>
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+
+          <!-- Submit -->
+          <button type="submit" class="btn btn-primary btn-lg" id="submitBtn"
+                  style="width:100%;justify-content:center;">
+            <i class="bi bi-search"></i>
+            <span data-i18n="btn_analyze">Analyze Document</span>
+          </button>
+
+          <!-- Progress -->
+          <div id="uploadProgress" style="display:none;margin-top:1rem;">
+            <div class="flex items-center gap-2" style="font-size:.82rem;color:var(--text2);margin-bottom:.5rem;">
+              <svg width="16" height="16" viewBox="0 0 16 16" style="animation:spin 1s linear infinite;flex-shrink:0;">
+                <circle cx="8" cy="8" r="6" fill="none" stroke="var(--accent)" stroke-width="2" stroke-dasharray="28" stroke-dashoffset="8"/>
+              </svg>
+              <span data-i18n="analyzing">Analyzing your document…</span>
+            </div>
+            <div style="height:3px;background:var(--surface2);border-radius:2px;overflow:hidden;">
+              <div style="height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));
+                          border-radius:2px;animation:progress 2s ease-in-out infinite;width:60%;"></div>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Inline Demo -->
+    <div class="card fade-up fade-up-2">
+      <div class="card-head">
+        <div class="card-head-title">
+          <i class="bi bi-lightning-fill" style="color:var(--pct)"></i>
+          <span data-i18n="demo_title">Quick text demo</span>
+        </div>
+        <button onclick="loadSample()" class="btn btn-ghost btn-sm">
+          <i class="bi bi-arrow-repeat"></i> <span data-i18n="btn_sample">Load sample</span>
+        </button>
+      </div>
+      <div class="card-body">
+        <textarea id="demoText" rows="4"
+          placeholder="Tekst kiritiń"
+          data-i18n-placeholder="demo_placeholder"
+          style="width:100%;background:var(--bg3);border:1px solid var(--border);
+                 border-radius:var(--radius2);padding:.75rem 1rem;color:var(--text);
+                 font-family:var(--font-mono);font-size:.82rem;resize:vertical;
+                 outline:none;transition:border-color var(--transition);line-height:1.6;"
+          onfocus="this.style.borderColor='var(--accent)'"
+          onblur="this.style.borderColor='var(--border)'"></textarea>
+        <div class="flex" style="gap:.5rem;margin-top:.75rem;">
+          <button onclick="runDemo()" class="btn btn-primary btn-sm">
+            <i class="bi bi-play-fill"></i> <span data-i18n="btn_run">Analyze</span>
+          </button>
+        </div>
+        <div id="demoResult" style="margin-top:1rem;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── RIGHT COLUMN ── -->
+  <div style="display:flex;flex-direction:column;gap:1.25rem;position:sticky;top:80px;">
+
+    <!-- Stats -->
+    <div class="grid-2 fade-up">
+      <div class="stat-card">
+        <div class="stat-num">{{ total_analyses }}</div>
+        <div class="stat-label" data-i18n="stat_analyses">Analyses</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">{{ total_results }}</div>
+        <div class="stat-label" data-i18n="stat_entities">Entities</div>
+      </div>
+    </div>
+
+    <!-- Type breakdown -->
+    {% if type_totals %}
+    <div class="card fade-up fade-up-1">
+      <div class="card-head">
+        <div class="card-head-title">
+          <i class="bi bi-bar-chart-fill" style="color:var(--accent2)"></i>
+          Entity breakdown
+        </div>
+      </div>
+      <div class="card-body" style="display:flex;flex-direction:column;gap:.6rem;">
+        {% for etype, cnt in type_totals.items %}
+        <div class="flex items-center" style="gap:.75rem;">
+          <span class="badge badge-{{ etype }}" style="min-width:44px;justify-content:center;">{{ etype }}</span>
+          <div style="flex:1;height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;">
+            <div style="height:100%;border-radius:3px;background:var(--accent);
+                        width:{% widthratio cnt total_results 100 %}%;
+                        transition:width .6s ease;"></div>
+          </div>
+          <span style="font-family:var(--font-mono);font-size:.78rem;color:var(--text2);min-width:24px;text-align:right;">{{ cnt }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Recent -->
+    {% if recent %}
+    <div class="card fade-up fade-up-2">
+      <div class="card-head">
+        <div class="card-head-title">
+          <i class="bi bi-clock-history" style="color:var(--text3)"></i>
+          Recent
+        </div>
+        <a href="{% url 'history' %}" class="btn btn-ghost btn-sm">View all</a>
+      </div>
+      <div>
+        {% for a in recent %}
+        <a href="{% url 'result' a.pk %}" style="display:flex;align-items:center;gap:.75rem;
+           padding:.75rem 1.25rem;border-bottom:1px solid var(--border);
+           text-decoration:none;transition:background var(--transition);"
+           onmouseover="this.style.background='rgba(255,255,255,.03)'"
+           onmouseout="this.style.background='transparent'">
+          <div style="width:32px;height:32px;background:var(--surface2);border-radius:8px;
+                      display:flex;align-items:center;justify-content:center;
+                      font-size:.85rem;color:var(--accent2);flex-shrink:0;">
+            <i class="bi bi-file-text"></i>
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:.82rem;font-weight:500;color:var(--text);
+                        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+              {{ a.original_name }}
+            </div>
+            <div style="font-size:.72rem;color:var(--text3);font-family:var(--font-mono);">
+              {{ a.upload_time|date:"d M, H:i" }}
+            </div>
+          </div>
+          <span style="font-family:var(--font-mono);font-size:.78rem;
+                       color:var(--tim);background:var(--tim-bg);
+                       padding:.15rem .5rem;border-radius:4px;">{{ a.result_count }}</span>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Legend -->
+    <div class="card fade-up fade-up-3">
+      <div class="card-head">
+        <div class="card-head-title">
+          <i class="bi bi-info-circle" style="color:var(--text3)"></i>
+          <span data-i18n="legend_title">Entity types</span>
+        </div>
+      </div>
+      <div class="card-body" style="display:flex;flex-direction:column;gap:.5rem;">
+        {% for etype, desc in legend %}
+        <div class="flex items-center" style="gap:.65rem;">
+          <span class="badge badge-{{ etype }}" style="min-width:44px;justify-content:center;">{{ etype }}</span>
+          <span style="font-size:.8rem;color:var(--text2);">{{ desc }}</span>
+        </div>
+        {% empty %}
+
+        <div class="flex items-center" style="gap:.65rem;"><span class="badge badge-MON" style="min-width:44px;justify-content:center;">MON</span><span style="font-size:.8rem;color:var(--text2);" data-i18n="type_MON">Pul ifodalari</span></div>
+        <div class="flex items-center" style="gap:.65rem;"><span class="badge badge-PCT" style="min-width:44px;justify-content:center;">PCT</span><span style="font-size:.8rem;color:var(--text2);" data-i18n="type_PCT">Foizli sonlar</span></div>
+        <div class="flex items-center" style="gap:.65rem;"><span class="badge badge-DAT" style="min-width:44px;justify-content:center;">DAT</span><span style="font-size:.8rem;color:var(--text2);" data-i18n="type_DAT">Sanalar</span></div>
+        <div class="flex items-center" style="gap:.65rem;"><span class="badge badge-TIM" style="min-width:44px;justify-content:center;">TIM</span><span style="font-size:.8rem;color:var(--text2);" data-i18n="type_TIM">Vaqt ifodalari</span></div>
+        <div class="flex items-center" style="gap:.65rem;"><span class="badge badge-CNT" style="min-width:44px;justify-content:center;">CNT</span><span style="font-size:.8rem;color:var(--text2);" data-i18n="type_CNT">Sanoq sonlar</span></div>
+        <div class="flex items-center" style="gap:.65rem;"><span class="badge badge-FRC" style="min-width:44px;justify-content:center;">FRC</span><span style="font-size:.8rem;color:var(--text2);" data-i18n="type_FRC">Kasrli sonlar</span></div>
+        <div class="flex items-center" style="gap:.65rem;"><span class="badge badge-ORD" style="min-width:44px;justify-content:center;">ORD</span><span style="font-size:.8rem;color:var(--text2);" data-i18n="type_ORD">Tartib sonlar</span></div>
+        <div class="flex items-center" style="gap:.65rem;"><span class="badge badge-APX" style="min-width:44px;justify-content:center;">APX</span><span style="font-size:.8rem;color:var(--text2);" data-i18n="type_APX">Taxminiy sonlar</span></div>
+        {% endfor %}
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Responsive: stack on mobile -->
+<style>
+  @media (max-width: 900px) {
+    .page-wrap > div { grid-template-columns: 1fr !important; }
+    .page-wrap > div > div:last-child { position: static !important; }
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes progress {
+    0%   { transform: translateX(-100%); }
+    50%  { transform: translateX(60%); }
+    100% { transform: translateX(200%); }
+  }
+  #fileInput { display: none !important; }
+  #dropZone:hover { border-color: var(--accent) !important; background: rgba(124,106,247,.08) !important; }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const SAMPLE = "Rayonda 2024-jılda tórt mıń gektar jerge egin egildi.\nJigirma bes procent ósti.\nKompaniya bes júz mıń som dáramat aldı.\nÚshinshi kvartalda saat on úsh-te jıyılıs bolıp ótti.\nBirinshi orında turǵan talaba sıylıqlandı.\nBirneshe adam bul jumısqa qatnastı.";
+
+const dropZone  = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.style.borderColor = 'var(--accent)'; dropZone.style.background = 'rgba(124,106,247,.08)'; });
+dropZone.addEventListener('dragleave', () => { dropZone.style.borderColor = 'var(--border2)'; dropZone.style.background = 'rgba(124,106,247,.04)'; });
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.style.borderColor = 'var(--border2)';
+  dropZone.style.background = 'rgba(124,106,247,.04)';
+  if (e.dataTransfer.files[0]) { fileInput.files = e.dataTransfer.files; showFile(e.dataTransfer.files[0].name); }
+});
+fileInput.addEventListener('change', () => { if (fileInput.files[0]) showFile(fileInput.files[0].name); });
+
+function showFile(name) {
+  document.getElementById('fileName').textContent = name;
+  document.getElementById('chosenFile').style.display = 'block';
+  dropZone.style.borderColor = 'var(--tim)';
+}
+
+document.getElementById('uploadForm').addEventListener('submit', function(e) {
+  if (!fileInput.files[0]) { e.preventDefault(); alert('Please select a file first.'); return; }
+  document.getElementById('uploadProgress').style.display = 'block';
+  document.getElementById('submitBtn').disabled = true;
+  document.getElementById('submitBtn').style.opacity = '.6';
+});
+
+function setAll(checked) {
+  document.querySelectorAll('.entity-cb').forEach(cb => cb.checked = checked);
+}
+
+function loadSample() {
+  document.getElementById('demoText').value = SAMPLE;
+}
+
+const TYPE_COLORS = { MON:'--mon', PCT:'--pct', DAT:'--dat', TIM:'--tim', CNT:'--cnt', FRC:'--frc', ORD:'--ord', APX:'--apx' };
+
+async function runDemo() {
+  const text = document.getElementById('demoText').value.trim();
+  if (!text) { alert('Please enter some text.'); return; }
+  const rd = document.getElementById('demoResult');
+  rd.innerHTML = '<div style="display:flex;align-items:center;gap:.5rem;font-size:.82rem;color:var(--text2);"><svg width="16" height="16" viewBox="0 0 16 16" style="animation:spin 1s linear infinite;"><circle cx="8" cy="8" r="6" fill="none" stroke="var(--accent)" stroke-width="2" stroke-dasharray="28" stroke-dashoffset="8"/></svg> Analyzing…</div>';
+  try {
+    const resp = await fetch('{% url "api_analyze" %}', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+      body: JSON.stringify({ text }),
+    });
+    const data = await resp.json();
+    if (data.error) { rd.innerHTML = `<div style="color:var(--mon);font-size:.82rem;">${data.error}</div>`; return; }
+    if (!data.items.length) { rd.innerHTML = '<div style="color:var(--text3);font-size:.82rem;">No entities found.</div>'; return; }
+
+    const rows = data.items.map((r, i) => {
+      const c = TYPE_COLORS[r.type] || '--text2';
+      const confW = Math.round(r.confidence * 100);
+      return `<tr>
+        <td style="color:var(--text3);font-family:var(--font-mono);font-size:.75rem;">${i+1}</td>
+        <td><span class="badge badge-${r.type}">${r.type}</span></td>
+        <td style="font-family:var(--font-mono);font-size:.8rem;color:var(--text2);">${r.raw}</td>
+        <td style="font-weight:600;color:var(${c});">${r.formatted}</td>
+        <td>
+          <div class="conf-bar"><div class="conf-fill" style="width:${confW}%"></div></div>
+        </td>
+      </tr>`;
+    }).join('');
+
+    rd.innerHTML = `
+      <div style="font-size:.75rem;color:var(--text3);font-family:var(--font-mono);margin-bottom:.5rem;">
+        ${data.count} entities · ${data.token_count} tokens
+      </div>
+      <div class="table-scroll">
+        <table class="ner-table">
+          <thead><tr><th>#</th><th>Type</th><th>Raw</th><th>Normalized</th><th>Conf</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+  } catch(err) {
+    rd.innerHTML = `<div style="color:var(--mon);font-size:.82rem;">${err.message}</div>`;
+  }
+}
+</script>
+{% endblock %}
